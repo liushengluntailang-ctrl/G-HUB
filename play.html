@@ -16,6 +16,10 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <!-- コイン獲得通知バッジ -->
+        <span id="coin-reward" class="hidden bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-2.5 py-1 rounded-xl font-bold animate-bounce">
+          🪙 +10 G 獲得！
+        </span>
         <button onclick="addLike()" class="bg-rose-600/80 hover:bg-rose-600 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow">
           ❤️ <span id="like-count">0</span>
         </button>
@@ -29,6 +33,7 @@
       <div class="lg:col-span-3">
         <div class="flex items-baseline gap-3 mb-2">
           <h1 id="game-title" class="text-xl font-black text-slate-100">読み込み中...</h1>
+          <span id="game-platforms" class="text-xs bg-slate-800 px-2 py-0.5 rounded-md text-indigo-300 font-bold"></span>
           <span id="game-author" class="text-xs text-slate-500 font-mono"></span>
         </div>
 
@@ -59,12 +64,12 @@
           <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-1.5 text-xs font-mono"></div>
         </div>
 
-        <!-- ライブチャット ＆ G-AI 相棒 -->
+        <!-- ライブチャット ＆ スキン対応 -->
         <div class="bg-[#111827] border border-slate-800 rounded-3xl p-4 h-[370px] flex flex-col">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
             <h2 class="font-bold text-xs text-indigo-400">💬 ライブチャット</h2>
             <button onclick="askCompanionAI()" id="ai-help-btn" class="bg-purple-600/80 hover:bg-purple-600 px-2 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow">
-              🤖 G-AIに攻略を聞く
+              🤖 G-AI攻略
             </button>
           </div>
 
@@ -88,6 +93,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('id');
     let currentGame = null;
+    let mySkin = 'default';
 
     async function initGame() {
       if (!gameId) return;
@@ -101,9 +107,20 @@
       document.getElementById('like-count').innerText = game.likes_count || 0;
       document.getElementById('game-frame').src = game.entry_url;
 
+      const plats = (game.platforms || 'pc').split(',').map(p => p === 'mobile' ? '📱 スマホ' : p === 'pad' ? '🎮 パッド' : '💻 PC').join(' / ');
+      document.getElementById('game-platforms').innerText = plats;
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.email === game.author_email) {
-        document.getElementById('author-controls').classList.remove('hidden');
+      if (user) {
+        if (user.email === game.author_email) document.getElementById('author-controls').classList.remove('hidden');
+
+        // プレイで +10 コイン獲得！
+        const { data: prof } = await supabase.from('profiles').select('*').eq('email', user.email).single();
+        if (prof) {
+          mySkin = prof.equipped_skin || 'default';
+          await supabase.from('profiles').update({ coins: (prof.coins || 0) + 10 }).eq('email', user.email);
+          document.getElementById('coin-reward').classList.remove('hidden');
+        }
       }
 
       supabase.from('games').update({ play_count: (game.play_count || 0) + 1 }).eq('id', gameId).then();
@@ -111,43 +128,64 @@
       loadMessages();
     }
 
-    // G-AI 相棒アドバイス
+    // チャットにスキンのクラスを付与
+    function getSkinClass(skin) {
+      if (skin === 'emerald') return 'text-emerald-400 font-bold';
+      if (skin === 'purple') return 'text-purple-400 font-bold drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]';
+      if (skin === 'gold') return 'text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]';
+      if (skin === 'rainbow') return 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500 bg-clip-text text-transparent font-black animate-pulse';
+      return 'text-indigo-400 font-bold';
+    }
+
+    async function loadMessages() {
+      const { data: msgs } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
+      const container = document.getElementById('chat-messages');
+      if (!msgs || msgs.length === 0) return container.innerHTML = '<p class="text-slate-500 text-center">コメントなし</p>';
+      container.innerHTML = msgs.map(m => `
+        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+          <span class="${m.user_name.includes('G-AI') ? 'text-purple-400 font-mono font-bold' : getSkinClass(m.user_name.split('::')[1])}">
+            ${m.user_name.split('::')[0]}
+          </span>
+          <p class="text-slate-200 mt-0.5 break-words">${m.content}</p>
+        </div>
+      `).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = document.getElementById('chat-user').value;
+      const content = document.getElementById('chat-content').value;
+      // スキン情報を名前に付与して送信
+      await supabase.from('messages').insert({ game_id: gameId, user_name: `${user}::${mySkin}`, content });
+      document.getElementById('chat-content').value = '';
+      loadMessages();
+    });
+
     window.askCompanionAI = async () => {
       const btn = document.getElementById('ai-help-btn');
       btn.disabled = true;
-      btn.innerText = '🤖 思考中...';
-
+      btn.innerText = '🤖...';
       try {
         const res = await fetch('/ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            systemPrompt: 'You are G-AI, an enthusiastic in-game companion. Give a short, cheerful 2-sentence tip or encouragement to the player based on the game info. Speak in Japanese like an anime companion.',
-            userPrompt: `ゲームタイトル: ${currentGame.title}\n説明: ${currentGame.description || 'なし'}`,
-            maxTokens: 200
+            systemPrompt: 'You are G-AI, a cheerful in-game companion. Give a short 2-sentence tip in Japanese.',
+            userPrompt: `ゲーム: ${currentGame.title}`,
+            maxTokens: 150
           })
         });
         const data = await res.json();
-
-        // チャットにAIのメッセージとして自動投稿
-        await supabase.from('messages').insert({
-          game_id: gameId,
-          user_name: '🤖 G-AI (相棒)',
-          content: data.reply
-        });
+        await supabase.from('messages').insert({ game_id: gameId, user_name: '🤖 G-AI::purple', content: data.reply });
         loadMessages();
-      } catch (err) {
-        alert('AIエラー: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = '🤖 G-AIに攻略を聞く';
-      }
+      } catch (err) { alert('AIエラー'); }
+      finally { btn.disabled = false; btn.innerText = '🤖 G-AI攻略'; }
     };
 
     window.deleteGame = async () => {
-      if (!confirm('本当に削除しますか？')) return;
+      if (!confirm('削除しますか？')) return;
       await supabase.from('games').delete().eq('id', gameId);
-      alert('削除しました');
       window.location.href = 'index.html';
     };
 
@@ -183,28 +221,6 @@
       await supabase.from('leaderboards').insert({ game_id: gameId, player_name, score });
       document.getElementById('score-value').value = '';
       loadScores();
-    });
-
-    async function loadMessages() {
-      const { data: msgs } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
-      const container = document.getElementById('chat-messages');
-      if (!msgs || msgs.length === 0) return container.innerHTML = '<p class="text-slate-500 text-center">コメントなし</p>';
-      container.innerHTML = msgs.map(m => `
-        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
-          <span class="font-bold ${m.user_name.includes('G-AI') ? 'text-purple-400 font-mono' : 'text-indigo-400'}">${m.user_name}</span>
-          <p class="text-slate-200 mt-0.5 break-words">${m.content}</p>
-        </div>
-      `).join('');
-      container.scrollTop = container.scrollHeight;
-    }
-
-    document.getElementById('chat-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const user = document.getElementById('chat-user').value;
-      const content = document.getElementById('chat-content').value;
-      await supabase.from('messages').insert({ game_id: gameId, user_name: user, content });
-      document.getElementById('chat-content').value = '';
-      loadMessages();
     });
 
     initGame();
