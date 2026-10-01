@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>G-HUB - ゲームプラットフォーム</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-8">
+  <div class="max-w-5xl mx-auto">
+    <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+      <h1 class="text-3xl font-extrabold text-indigo-400">🎮 G-HUB</h1>
+      <a href="upload.html" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold">＋ ゲームを投稿</a>
+    </header>
+
+    <div id="game-list" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <p class="text-slate-500">ゲームを読み込み中...</p>
+    </div>
+  </div>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://ddcnoghsiuxfhnwmtpyn.supabase.co',
+      'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
+    );
+
+    async function loadGames() {
+      const { data: games } = await supabase.from('games').select('*').order('created_at', { ascending: false });
+      const list = document.getElementById('game-list');
+      list.innerHTML = '';
+
+      if (!games || games.length === 0) {
+        list.innerHTML = '<p class="text-slate-500">ゲームがまだありません。「ゲームを投稿」から追加してください。</p>';
+        return;
+      }
+
+      games.forEach(g => {
+        list.innerHTML += `
+          <a href="play.html?id=${g.id}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-indigo-500 transition block">
+            <div class="bg-slate-950 aspect-video flex items-center justify-center text-4xl">🕹️</div>
+            <div class="p-4">
+              <h2 class="font-bold text-lg text-slate-100">${g.title}</h2>
+              <p class="text-slate-400 text-sm mt-1">${g.description || ''}</p>
+            </div>
+          </a>
+        `;
+      });
+    }
+    loadGames();
+  </script>
+</body>
+</html>
