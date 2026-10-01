@@ -21,11 +21,11 @@
       <button type="button" id="tab-code" onclick="switchMode('code')" class="px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400">⚡ コード直貼り</button>
     </div>
 
-    <!-- G-AI 自動生成ボックス -->
+    <!-- G-AI 生成エリア -->
     <div id="ai-section" class="bg-purple-950/30 border border-purple-500/40 p-4 rounded-2xl mb-6">
       <label class="block text-xs font-bold text-purple-300 mb-1">🤖 どんなゲームを作りたいですか？</label>
       <div class="flex gap-2">
-        <input type="text" id="ai-prompt" placeholder="例: スペースキーでジャンプして敵を避けるレトロ風ゲーム" class="flex-1 bg-slate-950 border border-purple-500/30 p-2.5 rounded-xl text-xs outline-none focus:border-purple-400 text-white">
+        <input type="text" id="ai-prompt" placeholder="例: スマホでも遊べる爽快タップクリッカーゲーム" class="flex-1 bg-slate-950 border border-purple-500/30 p-2.5 rounded-xl text-xs outline-none focus:border-purple-400 text-white">
         <button type="button" onclick="generateGameWithAI()" id="ai-gen-btn" class="bg-purple-600 hover:bg-purple-500 font-bold px-4 py-2.5 rounded-xl text-xs whitespace-nowrap shadow-lg">
           ゲーム生成！
         </button>
@@ -51,9 +51,40 @@
         </div>
       </div>
 
+      <!-- 対応機種の宣言 -->
+      <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800">
+        <label class="block font-bold mb-2 text-indigo-300">🎮 対応機種をチェック</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="plat-pc" checked class="accent-indigo-600">
+            <span>💻 PC (キーボード/マウス)</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="plat-mobile" class="accent-indigo-600">
+            <span>📱 スマホ/タッチ対応</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="plat-pad" class="accent-indigo-600">
+            <span>🎮 パッド対応</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- お祭りエントリー -->
+      <div class="bg-gradient-to-r from-amber-500/10 to-pink-500/10 p-3 rounded-2xl border border-amber-500/30 flex items-center justify-between">
+        <div>
+          <span class="font-bold text-amber-400 block">🎉 第1回 G-HUB杯（お祭り）</span>
+          <span class="text-[10px] text-slate-400">お題：1分で遊べる神ゲー</span>
+        </div>
+        <label class="flex items-center gap-1.5 cursor-pointer bg-amber-500/20 px-3 py-1.5 rounded-xl border border-amber-500/40">
+          <input type="checkbox" id="is-event" class="accent-amber-500">
+          <span class="text-xs font-bold text-amber-300">エントリーする！</span>
+        </label>
+      </div>
+
       <div>
         <label class="block font-bold mb-1">説明・操作説明</label>
-        <textarea id="desc" rows="2" placeholder="ゲームの説明や遊び方を入力" class="w-full bg-slate-950 border border-slate-700 p-2.5 rounded-xl outline-none focus:border-indigo-500"></textarea>
+        <textarea id="desc" rows="2" placeholder="ゲームの説明や操作方法を入力" class="w-full bg-slate-950 border border-slate-700 p-2.5 rounded-xl outline-none focus:border-indigo-500"></textarea>
       </div>
 
       <div id="zip-section" class="hidden">
@@ -63,7 +94,7 @@
 
       <div id="code-section">
         <label class="block font-bold mb-1">ゲームコード (HTML / Canvas / JS)</label>
-        <textarea id="code" rows="7" placeholder="HTMLコードまたはG-AIで自動生成されたコードがここに入ります" class="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 p-3 rounded-xl outline-none text-emerald-400"></textarea>
+        <textarea id="code" rows="6" placeholder="HTMLコードまたはG-AIで自動生成されたコードがここに入ります" class="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 p-3 rounded-xl outline-none text-emerald-400"></textarea>
       </div>
 
       <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 font-bold p-3 rounded-xl transition shadow-lg mt-4 text-sm">
@@ -99,7 +130,6 @@
       });
     };
 
-    // G-AI によるゲーム自動コーディング
     window.generateGameWithAI = async () => {
       const prompt = document.getElementById('ai-prompt').value;
       if (!prompt) return alert('どんなゲームにしたいか入力してください！');
@@ -119,7 +149,6 @@
             maxTokens: 2500
           })
         });
-
         const data = await res.json();
         if (data.error) throw new Error(data.error);
 
@@ -130,9 +159,9 @@
         document.getElementById('code').value = cleanCode;
         document.getElementById('title').value = prompt.slice(0, 15) + ' (AI作)';
         document.getElementById('desc').value = `G-AI (Qwen 2.5 Coder) によって自動生成されたゲーム。\nお題: ${prompt}`;
-        status.innerText = '✨ ゲームの生成が完了しました！下の「公開する」ボタンで即座に遊べます！';
+        status.innerText = '✨ ゲームの生成が完了しました！';
       } catch (err) {
-        status.innerText = '⚠️ 生成エラー: ' + err.message;
+        status.innerText = '⚠️ エラー: ' + err.message;
       } finally {
         btn.disabled = false;
       }
@@ -143,11 +172,19 @@
       const title = document.getElementById('title').value;
       const tag = document.getElementById('tag').value;
       const desc = document.getElementById('desc').value;
+      const isEvent = document.getElementById('is-event').checked;
+
+      // 対応機種リストの組み立て
+      const plats = [];
+      if (document.getElementById('plat-pc').checked) plats.push('pc');
+      if (document.getElementById('plat-mobile').checked) plats.push('mobile');
+      if (document.getElementById('plat-pad').checked) plats.push('pad');
+
       const btn = document.getElementById('submit-btn');
       const status = document.getElementById('status');
       const gameId = crypto.randomUUID();
-
       const { data: { user } } = await supabase.auth.getUser();
+
       btn.disabled = true;
 
       try {
@@ -172,7 +209,7 @@
           entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndex}`).data.publicUrl;
         } else {
           const rawCode = document.getElementById('code').value;
-          if (!rawCode) throw new Error('コードがありません。AIで生成するか貼り付けてください');
+          if (!rawCode) throw new Error('ゲームコードを入力してください');
           const blob = new Blob([rawCode], { type: 'text/html' });
           await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html', upsert: true });
           entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
@@ -185,11 +222,13 @@
           description: desc,
           entry_url: entryUrl,
           author_email: user.email,
+          platforms: plats.join(','),
+          is_event: isEvent,
           likes_count: 0,
           play_count: 0
         });
 
-        alert('ゲームを公開しました！');
+        alert(isEvent ? '🎉 お祭りエントリー＆公開が完了しました！' : 'ゲームを公開しました！');
         window.location.href = `play.html?id=${gameId}`;
       } catch (err) {
         alert('エラー: ' + err.message);
