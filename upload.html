@@ -2,29 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ゲーム公開・価格設定 - G-HUB</title>
+  <title>ゲームビルダー - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- esbuild-wasm バンドルエンジン -->
   <script src="https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/lib/browser.min.js"></script>
 </head>
 <body class="bg-[#0b0f19] text-white min-h-screen p-4 flex justify-center items-center font-sans">
-  <div class="max-w-4xl w-full bg-[#111827] p-8 rounded-3xl border border-slate-800 shadow-2xl">
+  <div class="max-w-5xl w-full bg-[#111827] p-6 lg:p-8 rounded-3xl border border-slate-800 shadow-2xl">
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-black bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-          🚀 ゲームビルダー ＆ 販売設定
+          🚀 ゲームビルダー ＆ プレビュー
         </h1>
-        <p class="text-xs text-slate-400">Vite/TSX/Unity対応 ＆ G-coin有料販売設定</p>
+        <p class="text-xs text-slate-400">Vite / React / TSX ＆ 通常HTML Zip ＆ AI生成に完全対応</p>
       </div>
-      <a href="index.html" class="text-xs text-slate-400 hover:text-white">← トップへ戻る</a>
+      <div class="flex gap-2">
+        <button type="button" onclick="loadSampleGame()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs shadow transition">
+          🧪 サンプルゲーム読込
+        </button>
+        <a href="index.html" class="text-xs text-slate-400 hover:text-white px-2 py-1.5">← トップへ</a>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 左側: アップロード ＆ 設定 -->
       <div class="space-y-4">
-        <!-- タブ -->
+        <!-- モード切り替えタブ -->
         <div class="flex gap-2 border-b border-slate-800 pb-3">
-          <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-3 py-1.5 font-bold text-xs rounded-xl bg-indigo-600 text-white">📦 Zip (Vite/TSX/Unity)</button>
+          <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-3 py-1.5 font-bold text-xs rounded-xl bg-indigo-600 text-white">📦 Zip (Vite/TSX/HTML)</button>
           <button type="button" id="tab-ai" onclick="switchMode('ai')" class="px-3 py-1.5 font-bold text-xs rounded-xl bg-slate-800 text-slate-400">🤖 AI自動生成</button>
           <button type="button" id="tab-code" onclick="switchMode('code')" class="px-3 py-1.5 font-bold text-xs rounded-xl bg-slate-800 text-slate-400">⚡ コード直貼り</button>
         </div>
@@ -33,26 +40,28 @@
         <div id="ai-section" class="hidden bg-purple-950/30 border border-purple-500/40 p-3 rounded-2xl">
           <label class="block text-xs font-bold text-purple-300 mb-1">🤖 どんなゲームを作りたいですか？</label>
           <div class="flex gap-2">
-            <input type="text" id="ai-prompt" placeholder="例: コインを集める爽快アクション" class="flex-1 bg-slate-950 border border-purple-500/30 p-2 rounded-xl text-xs outline-none text-white">
-            <button type="button" onclick="generateWithAI()" id="ai-gen-btn" class="bg-purple-600 hover:bg-purple-500 font-bold px-3 py-2 rounded-xl text-xs whitespace-nowrap">生成</button>
+            <input type="text" id="ai-prompt" placeholder="例: スペースキーでジャンプして障害物を避けるゲーム" class="flex-1 bg-slate-950 border border-purple-500/30 p-2 rounded-xl text-xs outline-none text-white">
+            <button type="button" onclick="generateWithAI()" id="ai-gen-btn" class="bg-purple-600 hover:bg-purple-500 font-bold px-3 py-2 rounded-xl text-xs whitespace-nowrap shadow">生成</button>
           </div>
         </div>
 
         <!-- Zipドロップゾーン -->
         <div id="zip-section">
           <div id="drop-zone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950/60 p-6 rounded-2xl text-center cursor-pointer transition">
-            <p class="text-xs font-bold text-slate-300">📁 Vite/React TSX または 通常のZip をドロップ</p>
-            <p class="text-[10px] text-slate-500 mt-1">クリックして選択 (自動でesbuild解析されます)</p>
+            <p class="text-xs font-bold text-slate-300">📁 ここにZipファイルをドロップ</p>
+            <p class="text-[10px] text-slate-500 mt-1">Vite/React/TSX または HTML5ゲームZipをクリックして選択</p>
             <input type="file" id="file-input" accept=".zip" class="hidden">
           </div>
         </div>
 
+        <!-- コード直貼り -->
         <div id="code-section" class="hidden">
-          <label class="block text-xs font-bold mb-1">HTML / JS コード</label>
+          <label class="block text-xs font-bold mb-1">HTML / Canvas コード</label>
           <textarea id="code-input" rows="5" class="w-full bg-slate-950 border border-slate-700 p-2.5 rounded-xl text-xs font-mono text-emerald-400 outline-none"></textarea>
+          <button type="button" onclick="previewDirectCode()" class="mt-1 bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1 rounded-lg">プレビューに反映</button>
         </div>
 
-        <!-- 入力フォーム -->
+        <!-- 設定入力 -->
         <div class="space-y-3 pt-2 text-xs">
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -71,18 +80,17 @@
             </div>
           </div>
 
-          <!-- 💎 価格設定（G-coin） -->
-          <div class="bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 p-3 rounded-2xl border border-amber-500/30 flex items-center justify-between">
+          <!-- 価格設定 -->
+          <div class="bg-gradient-to-r from-amber-500/10 to-indigo-500/10 p-3 rounded-2xl border border-amber-500/30 flex items-center justify-between">
             <div>
-              <span class="font-bold text-amber-400 block">💎 販売価格（G-coin）</span>
-              <span class="text-[10px] text-slate-400">有料にすると購入者だけがプレイ可能（売上はあなたに！）</span>
+              <span class="font-bold text-amber-400 block">💎 販売価格</span>
+              <span class="text-[10px] text-slate-400">有料にすると購入者だけがプレイ可能</span>
             </div>
             <select id="price" class="bg-slate-950 border border-amber-500/50 text-amber-300 font-bold px-3 py-1.5 rounded-xl outline-none">
               <option value="0">🆓 無料 (Free)</option>
               <option value="30">💎 30 G</option>
               <option value="50">💎 50 G</option>
               <option value="100">💎 100 G</option>
-              <option value="300">💎 300 G</option>
             </select>
           </div>
 
@@ -95,21 +103,27 @@
 
           <div>
             <label class="block font-bold mb-1">説明文</label>
-            <textarea id="desc" rows="2" placeholder="ゲームの説明や遊び方を入力" class="w-full bg-slate-950 border border-slate-700 p-2 rounded-xl outline-none focus:border-indigo-500"></textarea>
+            <textarea id="desc" rows="2" placeholder="ゲームの説明や操作方法を入力" class="w-full bg-slate-950 border border-slate-700 p-2 rounded-xl outline-none focus:border-indigo-500"></textarea>
           </div>
 
-          <div id="terminal" class="bg-black text-[#4af626] font-mono text-[10px] p-2.5 rounded-xl h-20 overflow-y-auto border border-slate-800 whitespace-pre-wrap">--- 準備完了 ---<br></div>
+          <!-- ターミナルログ画面 -->
+          <div id="terminal" class="bg-black text-[#4af626] font-mono text-[10px] p-2.5 rounded-xl h-24 overflow-y-auto border border-slate-800 whitespace-pre-wrap">--- ログ ---<br></div>
 
           <button type="button" onclick="publishGame()" id="publish-btn" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 font-bold p-3 rounded-xl transition shadow-lg text-xs">
-            🚀 ゲームを公開 / 販売開始！
+            🚀 このゲームをG-HUBに公開する！
           </button>
         </div>
       </div>
 
-      <!-- 右側: プレビュー画面 -->
+      <!-- 右側: ライブプレビュー画面 -->
       <div class="flex flex-col h-[520px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
         <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex justify-between items-center text-xs">
-          <span class="font-bold text-slate-400">🎮 動作確認プレビュー</span>
+          <span class="font-bold text-slate-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 動作確認プレビュー
+          </span>
+          <button type="button" onclick="clearSaveData()" class="text-rose-400 hover:text-rose-300 font-bold text-[11px]">
+            🗑️ セーブ消去＆リセット
+          </button>
         </div>
         <div class="flex-1 bg-black relative">
           <iframe id="preview-iframe" class="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
@@ -126,8 +140,6 @@
     const iframe = document.getElementById('preview-iframe');
     let esbuildReady = false;
     let finalHtmlContent = null;
-    let rawZipFile = null;
-    let isViteBundle = false;
     let currentMode = 'zip';
 
     function log(msg) {
@@ -135,25 +147,26 @@
       terminal.scrollTop = terminal.scrollHeight;
     }
 
-    // ログインガード
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert('ゲームを投稿するにはログインが必要です！');
-        window.location.href = 'index.html';
+    // iframe内のエラーメッセージを親画面のターミナルに中継
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'error') {
+        log(`❌ [プレビュー内エラー] ${e.data.msg}`);
       }
-    }
-    checkAuth();
+    });
 
+    // 1. esbuild-wasm の初期化
     async function initEsbuild() {
       try {
         await esbuild.initialize({ wasmURL: 'https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/esbuild.wasm' });
         esbuildReady = true;
-        log('✅ esbuild バンドルエンジン準備完了！');
-      } catch (e) { log('❌ esbuild 初期化失敗: ' + e.message); }
+        log('✅ esbuild-wasm バンドルエンジン準備完了！');
+      } catch (e) {
+        log('⚠️ esbuild 初期化スキップ (静的HTMLモードで動作可): ' + e.message);
+      }
     }
     initEsbuild();
 
+    // 2. モード切り替え
     window.switchMode = (mode) => {
       currentMode = mode;
       document.getElementById('ai-section').classList.toggle('hidden', mode !== 'ai');
@@ -164,6 +177,7 @@
       });
     };
 
+    // 3. Zip処理 ＆ 相対パス完全インライン化バンドラー
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
 
@@ -177,14 +191,15 @@
     });
 
     async function handleFile(file) {
-      rawZipFile = file;
       document.getElementById('title').value = file.name.replace('.zip', '');
-      log(`\n📦 Zip解析開始: ${file.name}`);
+      log(`\n📦 Zipファイルを解析中: ${file.name}`);
 
       try {
         const zip = await JSZip.loadAsync(file);
         const files = {};
         const paths = Object.keys(zip.files);
+
+        // フォルダ階層の自動トリム
         let prefix = '';
         const rootFolders = new Set(paths.map(p => p.split('/')[0]).filter(Boolean));
         if (rootFolders.size === 1 && paths.some(p => p.endsWith('index.html'))) prefix = Array.from(rootFolders)[0] + '/';
@@ -196,12 +211,15 @@
         }
 
         let html = files['index.html'] || files['public/index.html'];
+        if (!html) throw new Error('index.html が見つかりませんでした。');
+
         const entryCandidates = ['src/main.tsx', 'src/main.jsx', 'src/index.tsx', 'src/index.jsx', 'src/App.tsx', 'src/App.jsx'];
         const entryPath = entryCandidates.find(e => files[e] !== undefined);
 
-        if (entryPath) {
-          log(`⚡ Vite/React TSXプロジェクト検出 (${entryPath})... バンドル開始`);
-          isViteBundle = true;
+        // パターンA: Vite / React / TSX プロジェクトの場合 (esbuildで完全バンドル)
+        if (entryPath && esbuildReady) {
+          log(`⚡ Vite/React TSX エントリポイント検出: ${entryPath}`);
+          log('⚡ esbuild によるインメモリ・バンドル処理中...');
 
           const zipPlugin = {
             name: 'zip-vfs',
@@ -210,6 +228,7 @@
                 let target = args.path.startsWith('/') ? args.path.slice(1) : args.path;
                 const isRelative = args.path.startsWith('.');
                 const isAbsoluteLocal = files[target] !== undefined;
+
                 if (isRelative || isAbsoluteLocal || args.kind === 'entry-point') {
                   if (args.importer) {
                     const basePath = args.importer.split('/').slice(0, -1).join('/');
@@ -233,8 +252,11 @@
 
               build.onLoad({ filter: /.*/, namespace: 'zip-vfs' }, args => {
                 const content = files[args.path];
-                if (content === undefined) return { errors: [{ text: `File not found: ${args.path}` }] };
-                if (args.path.endsWith('.css')) return { contents: `const s=document.createElement('style');s.textContent=${JSON.stringify(content)};document.head.appendChild(s);`, loader: 'js' };
+                if (content === undefined) return { errors: [{ text: `File not found in zip: ${args.path}` }] };
+
+                if (args.path.endsWith('.css')) {
+                  return { contents: `const s=document.createElement('style');s.textContent=${JSON.stringify(content)};document.head.appendChild(s);`, loader: 'js' };
+                }
                 let loader = args.path.endsWith('.tsx') ? 'tsx' : args.path.endsWith('.ts') ? 'ts' : args.path.endsWith('.jsx') ? 'jsx' : 'js';
                 return { contents: content, loader };
               });
@@ -253,6 +275,16 @@
 
           const parser = new DOMParser();
           const doc = parser.parseFromString(html || '<div id="root"></div>', 'text/html');
+
+          // Tailwind CSS 注入
+          const tw = doc.createElement('script');
+          tw.src = 'https://cdn.tailwindcss.com';
+          doc.head.appendChild(tw);
+
+          // エラー検知スクリプト注入
+          injectErrorHandler(doc);
+
+          // バンドル済みJS注入
           const scriptEl = doc.createElement('script');
           scriptEl.type = 'module';
           scriptEl.textContent = result.outputFiles[0].text;
@@ -261,19 +293,157 @@
 
           finalHtmlContent = doc.documentElement.outerHTML;
           iframe.srcdoc = finalHtmlContent;
-          log('🎉 バンドル大成功！プレビューで遊べます！');
-        } else if (html) {
-          isViteBundle = false;
-          finalHtmlContent = html;
-          iframe.srcdoc = html;
-          log('🎉 静的HTMLプレビュー描画完了！');
+          log('🎉 TSXバンドル大成功！プレビューで遊べます！');
+
+        } else {
+          // パターンB: 通常の HTML + JS + CSS Zip (相対パスを完全インライン結合)
+          log('🔍 静的HTMLゲームを検出。相対パスのJS・CSSを結合中...');
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+
+          // CSSファイルのインライン化
+          doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && files[href]) {
+              const style = doc.createElement('style');
+              style.textContent = files[href];
+              link.replaceWith(style);
+            }
+          });
+
+          // JSファイルのインライン化
+          doc.querySelectorAll('script[src]').forEach(script => {
+            const src = script.getAttribute('src');
+            if (src && files[src]) {
+              const inlineScript = doc.createElement('script');
+              if (script.type) inlineScript.type = script.type;
+              inlineScript.textContent = files[src];
+              script.replaceWith(inlineScript);
+            }
+          });
+
+          injectErrorHandler(doc);
+
+          finalHtmlContent = doc.documentElement.outerHTML;
+          iframe.srcdoc = finalHtmlContent;
+          log('🎉 プレビュー描画完了！右側でゲームが動きます！');
         }
-      } catch (err) { log(`❌ エラー: ${err.message}`); }
+      } catch (err) {
+        log(`❌ 解析・バンドルエラー: ${err.message}`);
+      }
     }
 
+    function injectErrorHandler(doc) {
+      const errScript = doc.createElement('script');
+      errScript.textContent = `
+        window.onerror = function(msg, url, line) {
+          window.parent.postMessage({ type: 'error', msg: msg + ' (行: ' + line + ')' }, '*');
+        };
+      `;
+      doc.head.appendChild(errScript);
+    }
+
+    // 4. セーブデータ消去
+    window.clearSaveData = () => {
+      try {
+        iframe.contentWindow.localStorage.clear();
+        iframe.contentWindow.sessionStorage.clear();
+        const cur = iframe.srcdoc;
+        iframe.srcdoc = '';
+        setTimeout(() => iframe.srcdoc = cur, 50);
+        log('🗑️ セーブデータを消去してプレビューをリセットしました。');
+      } catch (e) {
+        log('❌ セーブ消去失敗: ' + e.message);
+      }
+    };
+
+    // 5. 【救済】サンプル神ゲーの即時読み込み（1秒で遊べる！）
+    window.loadSampleGame = () => {
+      log('\n🧪 サンプルゲーム（超爽快！ネオン・シューター）を生成中...');
+      const sampleCode = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Neon Shooter</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05050a; color:#fff; overflow:hidden; font-family:sans-serif; text-align:center; }
+    canvas { background:#0a0a14; display:block; margin:0 auto; border:2px solid #6366f1; }
+    #ui { position:absolute; top:10px; left:10px; font-weight:bold; font-size:16px; color:#4af626; }
+  </style>
+</head>
+<body>
+  <div id="ui">SCORE: <span id="score">0</span></div>
+  <canvas id="c" width="480" height="320"></canvas>
+  <script>
+    const c = document.getElementById('c'), ctx = c.getContext('2d');
+    let x = 220, bullets = [], enemies = [], score = 0, keys = {};
+    window.onkeydown = e => keys[e.key] = true;
+    window.onkeyup = e => keys[e.key] = false;
+
+    setInterval(() => {
+      if (Math.random() < 0.6) enemies.push({ x: Math.random() * 440, y: 0, s: 2 + Math.random()*2 });
+    }, 600);
+
+    let lastShot = 0;
+    function loop() {
+      if (keys['ArrowLeft'] && x > 0) x -= 6;
+      if (keys['ArrowRight'] && x < 440) x += 6;
+      if (keys[' '] && Date.now() - lastShot > 150) {
+        bullets.push({ x: x + 18, y: 280 });
+        lastShot = Date.now();
+      }
+
+      ctx.fillStyle = '#0a0a14'; ctx.fillRect(0,0,c.width,c.height);
+      ctx.fillStyle = '#6366f1'; ctx.fillRect(x, 290, 40, 15);
+
+      ctx.fillStyle = '#f43f5e';
+      bullets.forEach((b, bi) => {
+        b.y -= 8; ctx.fillRect(b.x, b.y, 4, 10);
+        if (b.y < 0) bullets.splice(bi, 1);
+      });
+
+      enemies.forEach((e, ei) => {
+        e.y += e.s;
+        ctx.fillStyle = '#38bdf8'; ctx.fillRect(e.x, e.y, 25, 20);
+
+        bullets.forEach((b, bi) => {
+          if (b.x > e.x && b.x < e.x+25 && b.y > e.y && b.y < e.y+20) {
+            enemies.splice(ei, 1); bullets.splice(bi, 1);
+            score += 100;
+            document.getElementById('score').innerText = score;
+          }
+        });
+
+        if (e.y > 320) enemies.splice(ei, 1);
+      });
+
+      requestAnimationFrame(loop);
+    }
+    loop();
+  <\/script>
+</body>
+</html>
+      `.trim();
+
+      finalHtmlContent = sampleCode;
+      iframe.srcdoc = sampleCode;
+      document.getElementById('title').value = 'ネオン・シューター (サンプル)';
+      document.getElementById('desc').value = '左右キーで移動、Spaceキーでビーム発射！敵を撃破してハイスコアを目指せ！';
+      log('🎉 サンプルゲームの読み込み完了！右側をクリックしてSpaceキーで撃てます！');
+    };
+
+    window.previewDirectCode = () => {
+      finalHtmlContent = document.getElementById('code-input').value;
+      iframe.srcdoc = finalHtmlContent;
+      log('プレビューを更新しました。');
+    };
+
+    // 6. G-AI 自動生成
     window.generateWithAI = async () => {
       const prompt = document.getElementById('ai-prompt').value;
-      if (!prompt) return alert('プロンプトを入力してください');
+      if (!prompt) return alert('作りたいゲームの内容を入力してください！');
       const btn = document.getElementById('ai-gen-btn');
       btn.disabled = true;
       log('\n🤖 Qwen 2.5 Coder がゲームをコーディング中...');
@@ -291,15 +461,18 @@
         const data = await res.json();
         let code = data.reply.trim().replace(/^```html/, '').replace(/```$/, '');
         finalHtmlContent = code;
-        isViteBundle = true;
         document.getElementById('code-input').value = code;
         document.getElementById('title').value = prompt.slice(0, 15) + ' (AI作)';
         iframe.srcdoc = code;
-        log('✨ AIゲーム生成完了！');
-      } catch (e) { log('❌ エラー: ' + e.message); }
-      finally { btn.disabled = false; }
+        log('✨ AIゲーム生成完了！右側ですぐに遊べます！');
+      } catch (e) {
+        log('❌ エラー: ' + e.message);
+      } finally {
+        btn.disabled = false;
+      }
     };
 
+    // 7. G-HUB への本番公開
     window.publishGame = async () => {
       const title = document.getElementById('title').value;
       const tag = document.getElementById('tag').value;
@@ -308,29 +481,19 @@
       const btn = document.getElementById('publish-btn');
 
       if (!title) return alert('タイトルを入力してください！');
-      if (!finalHtmlContent && !rawZipFile) return alert('ゲームが読み込まれていません！');
+      if (!finalHtmlContent) return alert('ゲームが読み込まれていません！Zipを入れるかサンプルを読み込んでください。');
 
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return alert('公開するにはログインが必要です！');
+
       btn.disabled = true;
       log('\n🚀 G-HUBにゲームをアップロード中...');
 
       try {
         const gameId = crypto.randomUUID();
-        let entryUrl = '';
-
-        if (isViteBundle && finalHtmlContent) {
-          const blob = new Blob([finalHtmlContent], { type: 'text/html' });
-          await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html' });
-          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
-        } else if (rawZipFile) {
-          const zip = await JSZip.loadAsync(rawZipFile);
-          for (const f of Object.keys(zip.files)) {
-            if (zip.files[f].dir) continue;
-            const blob = await zip.files[f].async('blob');
-            await supabase.storage.from('games').upload(`${gameId}/${f}`, blob, { upsert: true });
-          }
-          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
-        }
+        const blob = new Blob([finalHtmlContent], { type: 'text/html' });
+        await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html' });
+        const entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
 
         const plats = [];
         if (document.getElementById('plat-pc').checked) plats.push('pc');
@@ -350,7 +513,8 @@
           play_count: 0
         });
 
-        alert(price > 0 ? `💎 価格 ${price} G で販売開始しました！` : 'ゲームを無料公開しました！');
+        log('🎉 公開大成功！プレイ画面へ移動します...');
+        alert('ゲームの公開が完了しました！');
         window.location.href = `play.html?id=${gameId}`;
       } catch (err) {
         log('❌ 公開失敗: ' + err.message);
