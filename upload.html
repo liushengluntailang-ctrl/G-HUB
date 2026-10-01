@@ -2,22 +2,35 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ゲーム公開・更新 - G-HUB</title>
+  <title>ゲーム公開・AI生成 - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-[#0b0f19] text-white min-h-screen flex justify-center items-center p-4">
-  <div class="max-w-xl w-full bg-[#111827] p-8 rounded-3xl border border-slate-800 shadow-2xl">
+  <div class="max-w-2xl w-full bg-[#111827] p-8 rounded-3xl border border-slate-800 shadow-2xl">
     <div class="flex justify-between items-center mb-6">
-      <h1 id="page-title" class="text-2xl font-black bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">🚀 ゲームを公開する</h1>
+      <h1 id="page-title" class="text-2xl font-black bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">🚀 ゲームを公開する</h1>
       <a href="index.html" class="text-xs text-slate-400 hover:text-white">← トップへ戻る</a>
     </div>
 
-    <!-- 投稿モード切り替えタブ -->
+    <!-- モード切り替えタブ -->
     <div class="flex gap-2 mb-6 border-b border-slate-800 pb-3">
-      <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-4 py-2 font-bold text-xs rounded-xl bg-indigo-600 text-white">📦 Zipファイル</button>
-      <button type="button" id="tab-code" onclick="switchMode('code')" class="px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400">⚡ TSX/HTML直書き</button>
+      <button type="button" id="tab-ai" onclick="switchMode('ai')" class="px-4 py-2 font-bold text-xs rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg">🤖 G-AI 自動生成</button>
+      <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400">📦 Zip投稿</button>
+      <button type="button" id="tab-code" onclick="switchMode('code')" class="px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400">⚡ コード直貼り</button>
+    </div>
+
+    <!-- G-AI 自動生成ボックス -->
+    <div id="ai-section" class="bg-purple-950/30 border border-purple-500/40 p-4 rounded-2xl mb-6">
+      <label class="block text-xs font-bold text-purple-300 mb-1">🤖 どんなゲームを作りたいですか？</label>
+      <div class="flex gap-2">
+        <input type="text" id="ai-prompt" placeholder="例: スペースキーでジャンプして敵を避けるレトロ風ゲーム" class="flex-1 bg-slate-950 border border-purple-500/30 p-2.5 rounded-xl text-xs outline-none focus:border-purple-400 text-white">
+        <button type="button" onclick="generateGameWithAI()" id="ai-gen-btn" class="bg-purple-600 hover:bg-purple-500 font-bold px-4 py-2.5 rounded-xl text-xs whitespace-nowrap shadow-lg">
+          ゲーム生成！
+        </button>
+      </div>
+      <p id="ai-status" class="text-[11px] text-purple-300 mt-2 font-mono"></p>
     </div>
 
     <form id="upload-form" class="space-y-4 text-xs">
@@ -39,26 +52,21 @@
       </div>
 
       <div>
-        <label class="block font-bold mb-1">サムネイル画像 (PNG / JPG)</label>
-        <input type="file" id="thumb" accept="image/*" class="w-full text-slate-400 file:bg-slate-800 file:border-0 file:text-white file:px-3 file:py-1.5 file:rounded-xl file:mr-3 cursor-pointer">
-      </div>
-
-      <div>
         <label class="block font-bold mb-1">説明・操作説明</label>
         <textarea id="desc" rows="2" placeholder="ゲームの説明や遊び方を入力" class="w-full bg-slate-950 border border-slate-700 p-2.5 rounded-xl outline-none focus:border-indigo-500"></textarea>
       </div>
 
-      <div id="zip-section">
+      <div id="zip-section" class="hidden">
         <label class="block font-bold mb-1">WebGLのZipファイル</label>
         <input type="file" id="file" accept=".zip" class="w-full text-slate-400 file:bg-slate-800 file:border-0 file:text-white file:px-3 file:py-1.5 file:rounded-xl file:mr-3 cursor-pointer">
       </div>
 
-      <div id="code-section" class="hidden">
-        <label class="block font-bold mb-1">コード (TSX / JavaScript / HTML)</label>
-        <textarea id="code" rows="5" placeholder="<h1>Game</h1><script>...</script>" class="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 p-3 rounded-xl outline-none text-emerald-400"></textarea>
+      <div id="code-section">
+        <label class="block font-bold mb-1">ゲームコード (HTML / Canvas / JS)</label>
+        <textarea id="code" rows="7" placeholder="HTMLコードまたはG-AIで自動生成されたコードがここに入ります" class="w-full font-mono text-[11px] bg-slate-950 border border-slate-700 p-3 rounded-xl outline-none text-emerald-400"></textarea>
       </div>
 
-      <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 to-pink-600 hover:opacity-90 font-bold p-3 rounded-xl transition shadow-lg mt-4 text-sm">
+      <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 font-bold p-3 rounded-xl transition shadow-lg mt-4 text-sm">
         ゲームを公開する！
       </button>
       <div id="status" class="text-center font-mono text-indigo-300 mt-2"></div>
@@ -68,15 +76,12 @@
   <script>
     const proxyUrl = window.location.origin + '/supabase';
     const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
-    const urlParams = new URLSearchParams(window.location.search);
-    const editId = urlParams.get('edit');
-    let currentMode = 'zip';
+    let currentMode = 'ai';
 
-    // ログインガード
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('ゲームを投稿・更新するにはログインが必要です！');
+        alert('ゲームを投稿するにはログインが必要です！');
         window.location.href = 'index.html';
       }
     }
@@ -84,10 +89,53 @@
 
     window.switchMode = (mode) => {
       currentMode = mode;
+      document.getElementById('ai-section').classList.toggle('hidden', mode !== 'ai');
       document.getElementById('zip-section').classList.toggle('hidden', mode !== 'zip');
-      document.getElementById('code-section').classList.toggle('hidden', mode !== 'code');
-      document.getElementById('tab-zip').className = mode === 'zip' ? 'px-4 py-2 font-bold text-xs rounded-xl bg-indigo-600 text-white' : 'px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400';
-      document.getElementById('tab-code').className = mode === 'code' ? 'px-4 py-2 font-bold text-xs rounded-xl bg-indigo-600 text-white' : 'px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400';
+      document.getElementById('code-section').classList.toggle('hidden', mode === 'zip');
+      ['ai', 'zip', 'code'].forEach(m => {
+        document.getElementById(`tab-${m}`).className = m === mode 
+          ? 'px-4 py-2 font-bold text-xs rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' 
+          : 'px-4 py-2 font-bold text-xs rounded-xl bg-slate-800 text-slate-400';
+      });
+    };
+
+    // G-AI によるゲーム自動コーディング
+    window.generateGameWithAI = async () => {
+      const prompt = document.getElementById('ai-prompt').value;
+      if (!prompt) return alert('どんなゲームにしたいか入力してください！');
+
+      const btn = document.getElementById('ai-gen-btn');
+      const status = document.getElementById('ai-status');
+      btn.disabled = true;
+      status.innerText = '🤖 Qwenがゲームのロジックと思考を組み立てています...(約10〜20秒)';
+
+      try {
+        const res = await fetch('/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemPrompt: 'You are an expert game developer. Create a complete, standalone, playable HTML5 Canvas + JavaScript game in a single file based on user request. Output ONLY valid raw HTML code without markdown code blocks, starting with <!DOCTYPE html> and ending with </html>.',
+            userPrompt: prompt + ' 必ず画面内でちゃんと遊べてゲームオーバーやスコアがある完成品にしてください。',
+            maxTokens: 2500
+          })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        let cleanCode = data.reply.trim();
+        if (cleanCode.startsWith('```html')) cleanCode = cleanCode.replace(/^```html/, '').replace(/```$/, '');
+        else if (cleanCode.startsWith('```')) cleanCode = cleanCode.replace(/^```/, '').replace(/```$/, '');
+
+        document.getElementById('code').value = cleanCode;
+        document.getElementById('title').value = prompt.slice(0, 15) + ' (AI作)';
+        document.getElementById('desc').value = `G-AI (Qwen 2.5 Coder) によって自動生成されたゲーム。\nお題: ${prompt}`;
+        status.innerText = '✨ ゲームの生成が完了しました！下の「公開する」ボタンで即座に遊べます！';
+      } catch (err) {
+        status.innerText = '⚠️ 生成エラー: ' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
     };
 
     document.getElementById('upload-form').addEventListener('submit', async (e) => {
@@ -95,93 +143,53 @@
       const title = document.getElementById('title').value;
       const tag = document.getElementById('tag').value;
       const desc = document.getElementById('desc').value;
-      const thumbFile = document.getElementById('thumb').files[0];
       const btn = document.getElementById('submit-btn');
       const status = document.getElementById('status');
-      const gameId = editId || crypto.randomUUID();
+      const gameId = crypto.randomUUID();
 
       const { data: { user } } = await supabase.auth.getUser();
       btn.disabled = true;
 
       try {
         let entryUrl = null;
-        let thumbUrl = null;
 
-        // サムネイル画像のアップロード
-        if (thumbFile) {
-          status.innerText = 'サムネイル画像をアップロード中...';
-          const ext = thumbFile.name.split('.').pop();
-          const thumbPath = `${gameId}/thumbnail.${ext}`;
-          await supabase.storage.from('games').upload(thumbPath, thumbFile, { upsert: true });
-          thumbUrl = supabase.storage.from('games').getPublicUrl(thumbPath).data.publicUrl;
-        }
-
-        // コード直接入力
-        if (currentMode === 'code') {
-          const rawCode = document.getElementById('code').value;
-          if (rawCode) {
-            status.innerText = 'コード変換中...';
-            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com"><\/script><script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script></head><body class="bg-black text-white min-h-screen flex items-center justify-center m-0"><div id="root"></div><script type="text/babel">${rawCode}<\/script></body></html>`;
-            const blob = new Blob([html], { type: 'text/html' });
-            await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html', upsert: true });
-            entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
-          }
-        } else {
-          // Zipアップロード
+        if (currentMode === 'zip') {
           const file = document.getElementById('file').files[0];
-          if (file) {
-            status.innerText = 'Zip解析中...';
-            const zip = new JSZip();
-            const zipContent = await zip.loadAsync(file);
-            let mainIndex = null;
-            const files = Object.keys(zipContent.files).filter(k => !zipContent.files[k].dir);
-
-            for (const f of files) {
-              if (f.toLowerCase().endsWith('index.html')) {
-                if (!mainIndex || f.split('/').length < mainIndex.split('/').length) mainIndex = f;
-              }
+          if (!file) throw new Error('Zipを選択してください');
+          const zip = new JSZip();
+          const zipContent = await zip.loadAsync(file);
+          let mainIndex = null;
+          const files = Object.keys(zipContent.files).filter(k => !zipContent.files[k].dir);
+          for (const f of files) {
+            if (f.toLowerCase().endsWith('index.html')) {
+              if (!mainIndex || f.split('/').length < mainIndex.split('/').length) mainIndex = f;
             }
-            if (!mainIndex) throw new Error('Zip内に index.html がありません');
-
-            let c = 0;
-            for (const f of files) {
-              status.innerText = `転送中: (${++c}/${files.length})`;
-              const blob = await zipContent.files[f].async('blob');
-              await supabase.storage.from('games').upload(`${gameId}/${f}`, blob, { upsert: true });
-            }
-            entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndex}`).data.publicUrl;
           }
-        }
-
-        if (editId) {
-          const updateData = { title, description: desc, tag };
-          if (entryUrl) updateData.entry_url = entryUrl;
-          if (thumbUrl) updateData.thumbnail_url = thumbUrl;
-          await supabase.from('games').update(updateData).eq('id', editId);
-          alert('アップデート完了！');
+          for (const f of files) {
+            const blob = await zipContent.files[f].async('blob');
+            await supabase.storage.from('games').upload(`${gameId}/${f}`, blob, { upsert: true });
+          }
+          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndex}`).data.publicUrl;
         } else {
-          if (!entryUrl) throw new Error('ゲームファイルまたはコードを入力してください');
-          await supabase.from('games').insert({
-            id: gameId,
-            title,
-            tag,
-            description: desc,
-            entry_url: entryUrl,
-            thumbnail_url: thumbUrl,
-            author_email: user.email,
-            likes_count: 0,
-            play_count: 0
-          });
-
-          // 開発者EXP付与 (+100 EXP)
-          const { data: prof } = await supabase.from('profiles').select('*').eq('email', user.email).single();
-          if (prof) {
-            const newExp = (prof.dev_exp || 0) + 100;
-            await supabase.from('profiles').update({ dev_exp: newExp, dev_level: Math.floor(newExp / 100) + 1 }).eq('email', user.email);
-          }
-          alert('ゲームを公開しました！（開発者EXP +100獲得！）');
+          const rawCode = document.getElementById('code').value;
+          if (!rawCode) throw new Error('コードがありません。AIで生成するか貼り付けてください');
+          const blob = new Blob([rawCode], { type: 'text/html' });
+          await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html', upsert: true });
+          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
         }
 
+        await supabase.from('games').insert({
+          id: gameId,
+          title,
+          tag,
+          description: desc,
+          entry_url: entryUrl,
+          author_email: user.email,
+          likes_count: 0,
+          play_count: 0
+        });
+
+        alert('ゲームを公開しました！');
         window.location.href = `play.html?id=${gameId}`;
       } catch (err) {
         alert('エラー: ' + err.message);
