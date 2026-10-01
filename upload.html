@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>ゲーム投稿 - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex justify-center items-center p-4">
@@ -36,8 +36,9 @@
   </div>
 
   <script>
+    const proxyUrl = window.location.origin + '/supabase';
     const supabase = window.supabase.createClient(
-      'https://ddcnoghsiuxfhnwmtpyn.supabase.co',
+      proxyUrl,
       'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
     );
 
