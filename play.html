@@ -5,105 +5,103 @@
   <title>プレイ - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
+  <!-- あのファイルと同じエンジンをプレイ画面に完全装備 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/lib/browser.min.js"></script>
 </head>
-<body class="bg-[#0b0f19] text-white min-h-screen p-4 font-sans">
+<body class="bg-[#1e1e1e] text-white min-h-screen p-4 font-sans">
   <div class="max-w-7xl mx-auto">
+    
     <!-- ヘッダー -->
-    <div class="flex justify-between items-center mb-4">
-      <a href="index.html" class="text-indigo-400 hover:underline font-bold text-xs">← トップへ戻る</a>
+    <div class="flex justify-between items-center mb-3 pb-3 border-b border-[#333]">
+      <a href="index.html" class="text-indigo-400 hover:underline font-bold text-xs">← トップ一覧へ戻る</a>
       
       <div id="author-controls" class="hidden flex items-center gap-2">
-        <button onclick="deleteGame()" class="bg-rose-600/80 hover:bg-rose-600 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition">🗑️ 削除</button>
+        <button onclick="deleteGame()" class="bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition">🗑️ 削除</button>
       </div>
 
       <div class="flex items-center gap-2">
-        <!-- 🚀 別タブ直接起動ボタン（iframe制限を完全突破） -->
-        <a id="direct-link" href="#" target="_blank" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 px-3 py-1.5 rounded-xl font-bold text-xs text-slate-950 flex items-center gap-1 shadow">
-          🚀 別タブで開く
-        </a>
         <button onclick="sendTip(30)" id="tip-btn" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:opacity-90 px-3 py-1.5 rounded-xl font-bold text-xs text-slate-950 flex items-center gap-1 shadow">
           🪙 30 G 投げ銭！
         </button>
-        <button onclick="addLike()" class="bg-rose-600/80 hover:bg-rose-600 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow">
+        <button onclick="addLike()" class="bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow">
           ❤️ <span id="like-count">0</span>
-        </button>
-        <button onclick="toggleFullscreen()" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl font-bold text-xs border border-slate-700">
-          ⛶ 全画面
         </button>
       </div>
     </div>
 
+    <!-- メイングリッド -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div class="lg:col-span-3">
+      
+      <!-- ゲーム表示エリア（あのファイルのメイン画面をそのまま使用） -->
+      <div class="lg:col-span-3 flex flex-col">
         <div class="flex items-baseline gap-3 mb-2">
           <h1 id="game-title" class="text-xl font-black text-slate-100">読み込み中...</h1>
-          <span id="price-badge" class="text-xs font-bold px-2 py-0.5 rounded-md"></span>
-          <span id="game-platforms" class="text-xs bg-slate-800 px-2 py-0.5 rounded-md text-indigo-300 font-bold"></span>
+          <span id="price-badge" class="text-xs font-bold px-2 py-0.5 rounded"></span>
           <span id="game-author" class="text-xs text-slate-500 font-mono"></span>
         </div>
 
-        <!-- 3D・ボクセルゲーム完全対応 iframe -->
-        <div id="game-wrapper" class="bg-black rounded-3xl overflow-hidden border border-slate-800 aspect-video shadow-2xl relative">
-          <iframe
-            id="game-frame"
-            src=""
-            class="w-full h-full border-0 bg-black"
-            allow="autoplay; fullscreen; gamepad; xr-spatial-tracking; pointer-lock"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-pointer-lock"
-          ></iframe>
+        <!-- プレビュー/プレイ枠 -->
+        <div id="main-player" class="bg-[#1e1e1e] rounded-xl border border-[#333] flex flex-col aspect-video shadow-2xl relative overflow-hidden">
+          <div class="h-10 bg-[#2d2d2d] border-b border-[#333] flex items-center justify-between px-4 text-xs text-[#ccc]">
+            <span id="engine-status" class="font-bold flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Wasmエンジン起動中...
+            </span>
+            <div class="flex gap-2">
+              <button id="clear-data-btn" class="bg-[#dc2626] hover:bg-[#ef4444] text-white px-3 py-1 rounded font-bold text-xs transition">🗑️ セーブデータ消去</button>
+              <button id="fullscreen-btn" class="bg-[#4f46e5] hover:bg-[#6366f1] text-white px-3 py-1 rounded font-bold text-xs transition">全画面表示</button>
+            </div>
+          </div>
+          
+          <iframe id="preview-iframe" class="flex-1 w-full h-full border-0 bg-white" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-pointer-lock"></iframe>
 
-          <!-- 有料ゲームのロック画面 -->
-          <div id="lock-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+          <!-- 有料ゲームロック -->
+          <div id="lock-overlay" class="hidden absolute inset-0 bg-[#0b0f19]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
             <span class="text-5xl mb-3">🔒</span>
             <h2 class="text-2xl font-black text-white mb-1">このゲームは有料です</h2>
-            <p id="lock-msg" class="text-sm text-slate-400 mb-6">プレイするには G-coin で購入してください。</p>
-            <div class="flex flex-col items-center gap-3">
-              <button onclick="buyGame()" id="buy-btn" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-8 py-3.5 rounded-2xl text-base shadow-xl transition transform hover:scale-105">
-                💎 <span id="buy-price">100</span> G で購入してプレイ！
-              </button>
-              <span id="my-coins-info" class="text-xs text-amber-400 font-bold">あなたの所持コイン: --- G</span>
-            </div>
+            <p class="text-xs text-slate-400 mb-4">G-coin で購入してアンロックしてください。</p>
+            <button onclick="buyGame()" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-6 py-3 rounded-xl text-sm shadow-xl transition">
+              💎 <span id="buy-price">100</span> G で購入して遊ぶ！
+            </button>
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-[#111827] p-5 rounded-2xl border border-slate-800">
-            <h2 class="text-xs font-bold text-indigo-400 mb-2">📋 ゲーム説明・操作方法</h2>
-            <p id="game-desc" class="text-slate-300 whitespace-pre-wrap text-xs leading-relaxed">説明はありません。</p>
+        <!-- ログターミナル（エラーを即座に表示） -->
+        <div class="mt-3 bg-[#0e0e0e] text-[#4af626] font-mono text-[11px] p-2.5 rounded-xl border border-[#333] h-20 overflow-y-auto whitespace-pre-wrap" id="terminal">--- ゲームエンジン ログ ---<br></div>
+
+        <!-- 説明 ＆ スコア登録 -->
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="bg-[#252526] p-4 rounded-xl border border-[#333]">
+            <h2 class="font-bold text-indigo-400 mb-1">📋 操作方法・説明</h2>
+            <p id="game-desc" class="text-slate-300 whitespace-pre-wrap leading-relaxed">説明はありません。</p>
           </div>
 
-          <div class="bg-[#111827] p-5 rounded-2xl border border-slate-800">
-            <h2 class="text-xs font-bold text-yellow-400 mb-2">🏆 ハイスコアを登録する</h2>
-            <form id="score-form" class="flex gap-2">
-              <input type="text" id="score-player" placeholder="名前" required class="w-1/3 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-xl text-xs outline-none">
-              <input type="number" id="score-value" placeholder="スコア" required class="w-1/3 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-xl text-xs outline-none">
-              <button type="submit" class="w-1/3 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs">登録！</button>
+          <div class="bg-[#252526] p-4 rounded-xl border border-[#333]">
+            <h2 class="font-bold text-yellow-400 mb-1">🏆 ハイスコア登録</h2>
+            <form id="score-form" class="flex gap-2 mt-2">
+              <input type="text" id="score-player" placeholder="名前" required class="w-1/3 bg-[#1e1e1e] border border-[#444] px-2.5 py-1 rounded text-white outline-none">
+              <input type="number" id="score-value" placeholder="スコア" required class="w-1/3 bg-[#1e1e1e] border border-[#444] px-2.5 py-1 rounded text-white outline-none">
+              <button type="submit" class="w-1/3 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold px-2 py-1 rounded">登録</button>
             </form>
           </div>
         </div>
       </div>
 
-      <div class="lg:col-span-1 space-y-4">
-        <div class="bg-[#111827] border border-slate-800 rounded-3xl p-4 h-[220px] flex flex-col">
-          <h2 class="font-bold text-xs text-yellow-400 border-b border-slate-800 pb-2 mb-2">🏆 ランキング</h2>
-          <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-1.5 text-xs font-mono"></div>
+      <!-- 右サイドバー（ランキング ＆ チャット） -->
+      <div class="lg:col-span-1 space-y-4 text-xs">
+        <div class="bg-[#252526] border border-[#333] rounded-xl p-4 h-[220px] flex flex-col">
+          <h2 class="font-bold text-yellow-400 border-b border-[#333] pb-2 mb-2">🏆 ランキング</h2>
+          <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-1 font-mono"></div>
         </div>
 
-        <div class="bg-[#111827] border border-slate-800 rounded-3xl p-4 h-[370px] flex flex-col">
-          <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
-            <h2 class="font-bold text-xs text-indigo-400">💬 ライブチャット</h2>
-            <button onclick="askCompanionAI()" id="ai-help-btn" class="bg-purple-600/80 hover:bg-purple-600 px-2 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow">
-              🤖 G-AI攻略
-            </button>
-          </div>
-
-          <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs"></div>
-
-          <form id="chat-form" class="mt-2 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
-            <input type="text" id="chat-user" placeholder="名前" required class="bg-slate-950 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs outline-none">
+        <div class="bg-[#252526] border border-[#333] rounded-xl p-4 h-[380px] flex flex-col">
+          <h2 class="font-bold text-indigo-400 border-b border-[#333] pb-2 mb-2">💬 ライブチャット</h2>
+          <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+          <form id="chat-form" class="mt-2 pt-2 border-t border-[#333] flex flex-col gap-1.5">
+            <input type="text" id="chat-user" placeholder="名前" required class="bg-[#1e1e1e] border border-[#444] px-2 py-1 rounded text-white outline-none">
             <div class="flex gap-1.5">
-              <input type="text" id="chat-content" placeholder="コメントを入力..." required class="flex-1 bg-slate-950 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs outline-none">
-              <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-xl font-bold text-xs">送信</button>
+              <input type="text" id="chat-content" placeholder="コメントを入力..." required class="flex-1 bg-[#1e1e1e] border border-[#444] px-2 py-1 rounded text-white outline-none">
+              <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded font-bold text-white">送信</button>
             </div>
           </form>
         </div>
@@ -116,15 +114,88 @@
     const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('id');
+
+    const terminal = document.getElementById('terminal');
+    const iframe = document.getElementById('preview-iframe');
+    const statusEl = document.getElementById('engine-status');
+    const mainArea = document.getElementById('main-player');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const clearDataBtn = document.getElementById('clear-data-btn');
+
+    let esbuildReady = false;
     let currentGame = null;
     let currentUser = null;
     let userCoins = 0;
-    let mySkin = 'default';
 
-    async function initGame() {
+    function log(msg) {
+      terminal.innerText += msg + '\n';
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // 全画面切り替え機能（あのファイルそのまま）
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        if (mainArea.requestFullscreen) mainArea.requestFullscreen();
+        fullscreenBtn.textContent = '全画面解除';
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        fullscreenBtn.textContent = '全画面表示';
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) fullscreenBtn.textContent = '全画面表示';
+    });
+
+    // セーブデータ消去処理（あのファイルそのまま）
+    clearDataBtn.addEventListener('click', () => {
+      if (!iframe.srcdoc) return alert("ゲームが読み込まれていません。");
+      if (confirm("セーブデータ（localStorage）を削除して再読み込みしますか？")) {
+        try {
+          const iframeWin = iframe.contentWindow;
+          if (iframeWin) {
+            iframeWin.localStorage.clear();
+            iframeWin.sessionStorage.clear();
+            const currentDoc = iframe.srcdoc;
+            iframe.srcdoc = '';
+            setTimeout(() => {
+              iframe.srcdoc = currentDoc;
+              log("🗑️ セーブデータを削除し、ゲームをリセットしました。");
+            }, 50);
+          }
+        } catch (e) {
+          log("❌ セーブデータ消去失敗: " + e.message);
+        }
+      }
+    });
+
+    // プレビュー内エラー検知
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'error') {
+        log(`❌ [ゲーム内エラー] ${e.data.msg}`);
+      }
+    });
+
+    // ★ esbuild-wasm 初期化 ★
+    async function initEsbuild() {
+      try {
+        await esbuild.initialize({
+          wasmURL: 'https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/esbuild.wasm'
+        });
+        esbuildReady = true;
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ゲームエンジン準備完了';
+        log("✅ esbuild-wasm の初期化が完了しました。");
+        loadAndRunGame(); // エンジン準備完了後にゲーム読み込み開始
+      } catch (e) {
+        log("❌ esbuild 初期化失敗: " + e.message);
+      }
+    }
+
+    // ゲーム情報取得 ＆ 実行
+    async function loadAndRunGame() {
       if (!gameId) return;
-      const { data: game } = await supabase.from('games').select('*').eq('id', gameId).single();
-      if (!game) return alert('ゲームが見つかりませんでした');
+      const { data: game, error } = await supabase.from('games').select('*').eq('id', gameId).single();
+      if (error || !game) return alert('ゲームが見つかりませんでした');
       currentGame = game;
 
       document.getElementById('game-title').innerText = game.title;
@@ -134,31 +205,23 @@
 
       const priceBadge = document.getElementById('price-badge');
       if (game.price_coins > 0) {
-        priceBadge.className = 'text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md';
+        priceBadge.className = 'text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded';
         priceBadge.innerText = `💎 ${game.price_coins} G`;
       } else {
-        priceBadge.className = 'text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-md';
+        priceBadge.className = 'text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded';
         priceBadge.innerText = 'FREE';
       }
-
-      const plats = (game.platforms || 'pc').split(',').map(p => p === 'mobile' ? '📱 スマホ' : p === 'pad' ? '🎮 パッド' : '💻 PC').join(' / ');
-      document.getElementById('game-platforms').innerText = plats;
 
       // ユーザー確認
       const { data: { user } } = await supabase.auth.getUser();
       currentUser = user;
-
       if (user) {
         if (user.email === game.author_email) document.getElementById('author-controls').classList.remove('hidden');
         const { data: prof } = await supabase.from('profiles').select('*').eq('email', user.email).single();
-        if (prof) {
-          userCoins = prof.coins || 0;
-          mySkin = prof.equipped_skin || 'default';
-          document.getElementById('my-coins-info').innerText = `あなたの所持コイン: ${userCoins} G`;
-        }
+        if (prof) userCoins = prof.coins || 0;
       }
 
-      // 有料ゲームのロック判定
+      // 有料ロックチェック
       if (game.price_coins > 0) {
         let isPurchased = false;
         if (user) {
@@ -168,171 +231,238 @@
             if (purchase) isPurchased = true;
           }
         }
-
         if (!isPurchased) {
           document.getElementById('lock-overlay').classList.remove('hidden');
           document.getElementById('buy-price').innerText = game.price_coins;
-          if (!user) {
-            document.getElementById('buy-btn').innerText = '🔑 ログインして購入する';
-            document.getElementById('buy-btn').onclick = () => window.location.href = 'index.html';
-          }
           return;
         }
       }
 
-      // ★ i-FILTER回避：生Supabase URLをRenderプロキシURLに自動置換！
-      let safeUrl = game.entry_url;
-      if (safeUrl.includes('supabase.co')) {
-        safeUrl = safeUrl.replace(/https:\/\/[^/]+\.supabase\.co/, window.location.origin + '/supabase');
+      // ★ ゲームデータの取得（HTMLまたはZip） ★
+      log(`📦 ゲームデータを取得中: ${game.title}`);
+      let targetUrl = game.entry_url;
+      if (targetUrl.includes('supabase.co')) {
+        targetUrl = targetUrl.replace(/https:\/\/[^/]+\.supabase\.co/, window.location.origin + '/supabase');
       }
 
-      document.getElementById('game-frame').src = safeUrl;
-      document.getElementById('direct-link').href = safeUrl;
+      try {
+        const response = await fetch(targetUrl);
+        const textData = await response.text();
+
+        // もしHTMLファイルなら直接実行、Zipファイルバイナリならあのエンジンで解凍・バンドル
+        if (textData.includes('<!DOCTYPE html>') || textData.includes('<html')) {
+          log("⚡ 単一HTMLゲームを検出。展開して実行します...");
+          iframe.srcdoc = textData;
+          log("🚀 ゲーム起動完了！");
+        } else {
+          // Zipバイナリの展開処理（あのエンジンをそのまま実行）
+          const blobRes = await fetch(targetUrl);
+          const blob = await blobRes.blob();
+          await processZipBlob(blob);
+        }
+      } catch (err) {
+        log(`❌ ゲーム読み込み失敗: ${err.message}`);
+      }
 
       supabase.from('games').update({ play_count: (game.play_count || 0) + 1 }).eq('id', gameId).then();
       loadScores();
       loadMessages();
     }
 
-    // ゲーム購入処理
+    // ★★★ あの「せんとう作」コードの processZip をそのまま完全実行 ★★★
+    async function processZipBlob(blobFile) {
+      log(`⚡ esbuild でZipを展開・バンドル中...`);
+      try {
+        const zip = await JSZip.loadAsync(blobFile);
+        const files = {};
+        const paths = Object.keys(zip.files);
+
+        let prefix = '';
+        const rootFolders = new Set(paths.map(p => p.split('/')[0]).filter(Boolean));
+        if (rootFolders.size === 1 && paths.some(p => p.endsWith('index.html'))) {
+          prefix = Array.from(rootFolders)[0] + '/';
+        }
+
+        for (const [path, entry] of Object.entries(zip.files)) {
+          if (entry.dir) continue;
+          let cleanPath = prefix && path.startsWith(prefix) ? path.slice(prefix.length) : path;
+          files[cleanPath] = await entry.async('text');
+        }
+
+        let html = files['index.html'] || files['public/index.html'];
+        if (!html) {
+          log('❌ index.html が見つかりませんでした。');
+          return;
+        }
+
+        const entryCandidates = ['src/main.tsx', 'src/main.jsx', 'src/index.tsx', 'src/index.jsx', 'src/App.tsx', 'src/App.jsx'];
+        const entryPath = entryCandidates.find(e => files[e] !== undefined);
+
+        if (!entryPath) {
+          // TSXなしの通常の静的HTMLゲーム
+          iframe.srcdoc = html;
+          log('🚀 静的ゲーム起動完了！');
+          return;
+        }
+
+        log(`⚡ esbuild バンドル処理中 (${entryPath})...`);
+
+        const zipPlugin = {
+          name: 'zip-vfs',
+          setup(build) {
+            build.onResolve({ filter: /.*/ }, args => {
+              let target = args.path.startsWith('/') ? args.path.slice(1) : args.path;
+              const isRelative = args.path.startsWith('.');
+              const isAbsoluteLocal = files[target] !== undefined;
+
+              if (isRelative || isAbsoluteLocal || args.kind === 'entry-point') {
+                if (args.importer) {
+                  const basePath = args.importer.split('/').slice(0, -1).join('/');
+                  const rawPath = basePath ? basePath + '/' + args.path : args.path;
+                  const parts = rawPath.split('/');
+                  const stack = [];
+                  for (const p of parts) {
+                    if (p === '.' || p === '') continue;
+                    if (p === '..') stack.pop();
+                    else stack.push(p);
+                  }
+                  target = stack.join('/');
+                }
+
+                const exts = ['', '.tsx', '.ts', '.jsx', '.js', '.css', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
+                for (const ext of exts) {
+                  if (files[target + ext] !== undefined) {
+                    return { path: target + ext, namespace: 'zip-vfs' };
+                  }
+                }
+                return { path: target, namespace: 'zip-vfs' };
+              }
+
+              let pkg = args.path;
+              return { path: `https://esm.sh/${pkg}`, external: true };
+            });
+
+            build.onLoad({ filter: /.*/, namespace: 'zip-vfs' }, args => {
+              const content = files[args.path];
+              if (content === undefined) {
+                return { errors: [{ text: `File not found in zip: ${args.path}` }] };
+              }
+
+              if (args.path.endsWith('.css')) {
+                const escapedCss = JSON.stringify(content);
+                const js = `
+                  const style = document.createElement('style');
+                  style.textContent = ${escapedCss};
+                  document.head.appendChild(style);
+                `;
+                return { contents: js, loader: 'js' };
+              }
+
+              let loader = 'js';
+              if (args.path.endsWith('.tsx')) loader = 'tsx';
+              else if (args.path.endsWith('.ts')) loader = 'ts';
+              else if (args.path.endsWith('.jsx')) loader = 'jsx';
+
+              return { contents: content, loader: loader };
+            });
+          }
+        };
+
+        const result = await esbuild.build({
+          entryPoints: [entryPath],
+          bundle: true,
+          format: 'esm',
+          plugins: [zipPlugin],
+          write: false,
+          jsx: 'automatic',
+          jsxImportSource: 'react'
+        });
+
+        const bundledJs = result.outputFiles[0].text;
+        log('🔗 html に JS を注入中...');
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const head = doc.head;
+
+        const tailwindScript = doc.createElement('script');
+        tailwindScript.src = "https://cdn.tailwindcss.com";
+        head.appendChild(tailwindScript);
+
+        const scriptEl = doc.createElement('script');
+        scriptEl.type = 'module';
+        scriptEl.textContent = bundledJs;
+
+        doc.querySelectorAll('script[type="module"]').forEach(s => s.remove());
+        doc.body.appendChild(scriptEl);
+
+        const errScript = doc.createElement('script');
+        errScript.textContent = `
+          window.onerror = function(msg, url, line) {
+            window.parent.postMessage({ type: 'error', msg: msg + ' (Line: ' + line + ')' }, '*');
+          };
+        `;
+        head.appendChild(errScript);
+
+        iframe.srcdoc = doc.documentElement.outerHTML;
+        log('🚀 ゲーム起動完了！遊べます！');
+
+      } catch (err) {
+        log(`❌ バンドルエラー: ${err.message}`);
+      }
+    }
+
+    // 購入処理
     window.buyGame = async () => {
       if (!currentUser) return window.location.href = 'index.html';
-      if (userCoins < currentGame.price_coins) {
-        return alert(`コインが足りません！（必要: ${currentGame.price_coins} G / 所持: ${userCoins} G）`);
-      }
-      if (!confirm(`💎 ${currentGame.price_coins} G を支払って購入しますか？`)) return;
+      if (userCoins < currentGame.price_coins) return alert(`コイン不足！(所持: ${userCoins} G)`);
+      if (!confirm(`${currentGame.price_coins} G で購入しますか？`)) return;
 
-      try {
-        const newBuyerCoins = userCoins - currentGame.price_coins;
-        await supabase.from('profiles').update({ coins: newBuyerCoins }).eq('email', currentUser.email);
-
-        if (currentGame.author_email && currentGame.author_email !== 'guest') {
-          const { data: authorProf } = await supabase.from('profiles').select('*').eq('email', currentGame.author_email).single();
-          if (authorProf) {
-            await supabase.from('profiles').update({
-              coins: (authorProf.coins || 0) + currentGame.price_coins,
-              dev_exp: (authorProf.dev_exp || 0) + currentGame.price_coins
-            }).eq('email', currentGame.author_email);
-          }
-        }
-
-        await supabase.from('purchases').insert({ user_email: currentUser.email, game_id: gameId });
-        alert('🎉 購入完了！');
-        document.getElementById('lock-overlay').classList.add('hidden');
-        initGame();
-      } catch (err) { alert('購入エラー: ' + err.message); }
+      await supabase.from('profiles').update({ coins: userCoins - currentGame.price_coins }).eq('email', currentUser.email);
+      await supabase.from('purchases').insert({ user_email: currentUser.email, game_id: gameId });
+      alert('🎉 購入完了！');
+      document.getElementById('lock-overlay').classList.add('hidden');
+      loadAndRunGame();
     };
 
-    // 投げ銭
+    // 投げ銭処理
     window.sendTip = async (amount = 30) => {
-      if (!currentUser) return alert('投げ銭をするにはログインが必要です！');
-      if (currentUser.email === currentGame.author_email) return alert('自分自身には投げ銭できません');
-      if (userCoins < amount) return alert(`コインが足りません！（所持: ${userCoins} G）`);
-      if (!confirm(`🪙 作者に ${amount} G 投げ銭しますか？`)) return;
+      if (!currentUser) return alert('ログインが必要です！');
+      if (userCoins < amount) return alert('コインが足りません！');
+      if (!confirm(`作者に ${amount} G 投げ銭しますか？`)) return;
 
-      try {
-        userCoins -= amount;
-        await supabase.from('profiles').update({ coins: userCoins }).eq('email', currentUser.email);
-
-        if (currentGame.author_email && currentGame.author_email !== 'guest') {
-          const { data: authorProf } = await supabase.from('profiles').select('*').eq('email', currentGame.author_email).single();
-          if (authorProf) {
-            await supabase.from('profiles').update({
-              coins: (authorProf.coins || 0) + amount,
-              dev_exp: (authorProf.dev_exp || 0) + (amount * 2)
-            }).eq('email', currentGame.author_email);
-          }
-        }
-
-        await supabase.from('messages').insert({
-          game_id: gameId,
-          user_name: '🪙 SYSTEM::gold',
-          content: `🎉 ${currentUser.email.split('@')[0]} さんが作者に ${amount} G を投げ銭しました！！`
-        });
-
-        alert(`🎉 作者に ${amount} G を投げ銭しました！`);
-        loadMessages();
-      } catch (err) { alert('エラー: ' + err.message); }
-    };
-
-    function getSkinClass(skin) {
-      if (skin === 'emerald') return 'text-emerald-400 font-bold';
-      if (skin === 'purple') return 'text-purple-400 font-bold drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]';
-      if (skin === 'gold') return 'text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]';
-      if (skin === 'rainbow') return 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500 bg-clip-text text-transparent font-black animate-pulse';
-      return 'text-indigo-400 font-bold';
-    }
-
-    async function loadMessages() {
-      const { data: msgs } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
-      const container = document.getElementById('chat-messages');
-      if (!msgs || msgs.length === 0) return container.innerHTML = '<p class="text-slate-500 text-center">コメントなし</p>';
-      container.innerHTML = msgs.map(m => `
-        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
-          <span class="${m.user_name.includes('G-AI') ? 'text-purple-400 font-mono font-bold' : getSkinClass(m.user_name.split('::')[1])}">
-            ${m.user_name.split('::')[0]}
-          </span>
-          <p class="text-slate-200 mt-0.5 break-words">${m.content}</p>
-        </div>
-      `).join('');
-      container.scrollTop = container.scrollHeight;
-    }
-
-    document.getElementById('chat-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const user = document.getElementById('chat-user').value;
-      const content = document.getElementById('chat-content').value;
-      await supabase.from('messages').insert({ game_id: gameId, user_name: `${user}::${mySkin}`, content });
-      document.getElementById('chat-content').value = '';
+      await supabase.from('profiles').update({ coins: userCoins - amount }).eq('email', currentUser.email);
+      await supabase.from('messages').insert({
+        game_id: gameId,
+        user_name: '🪙 SYSTEM::gold',
+        content: `🎉 ${currentUser.email.split('@')[0]} さんが作者に ${amount} G 投げ銭しました！`
+      });
+      alert(`🎉 投げ銭完了！`);
       loadMessages();
-    });
-
-    window.askCompanionAI = async () => {
-      const btn = document.getElementById('ai-help-btn');
-      btn.disabled = true;
-      btn.innerText = '🤖...';
-      try {
-        const res = await fetch('/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt: 'You are G-AI, a cheerful in-game companion. Give a short 2-sentence tip in Japanese.',
-            userPrompt: `ゲーム: ${currentGame.title}`,
-            maxTokens: 150
-          })
-        });
-        const data = await res.json();
-        await supabase.from('messages').insert({ game_id: gameId, user_name: '🤖 G-AI::purple', content: data.reply });
-        loadMessages();
-      } catch (err) { alert('AIエラー'); }
-      finally { btn.disabled = false; btn.innerText = '🤖 G-AI攻略'; }
     };
 
+    // 削除
     window.deleteGame = async () => {
       if (!confirm('削除しますか？')) return;
       await supabase.from('games').delete().eq('id', gameId);
       window.location.href = 'index.html';
     };
 
-    window.toggleFullscreen = () => {
-      const frame = document.getElementById('game-wrapper');
-      if (!document.fullscreenElement) frame.requestFullscreen();
-      else document.exitFullscreen();
-    };
-
+    // いいね
     window.addLike = async () => {
-      const { data: game } = await supabase.from('games').select('likes_count').eq('id', gameId).single();
-      const newCount = (game?.likes_count || 0) + 1;
-      await supabase.from('games').update({ likes_count: newCount }).eq('id', gameId);
-      document.getElementById('like-count').innerText = newCount;
+      const { data: g } = await supabase.from('games').select('likes_count').eq('id', gameId).single();
+      const next = (g?.likes_count || 0) + 1;
+      await supabase.from('games').update({ likes_count: next }).eq('id', gameId);
+      document.getElementById('like-count').innerText = next;
     };
 
+    // ランキング
     async function loadScores() {
       const { data: scores } = await supabase.from('leaderboards').select('*').eq('game_id', gameId).order('score', { ascending: false }).limit(10);
       const list = document.getElementById('leaderboard-list');
       if (!scores || scores.length === 0) return list.innerHTML = '<p class="text-slate-500 text-center">スコアなし</p>';
       list.innerHTML = scores.map((s, idx) => `
-        <div class="flex justify-between items-center bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+        <div class="flex justify-between items-center bg-[#1e1e1e] p-1.5 rounded border border-[#333]">
           <span class="text-slate-400">#${idx+1} ${s.player_name}</span>
           <span class="font-bold text-yellow-500">${s.score}</span>
         </div>
@@ -348,7 +478,31 @@
       loadScores();
     });
 
-    initGame();
+    // チャット
+    async function loadMessages() {
+      const { data: msgs } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
+      const container = document.getElementById('chat-messages');
+      if (!msgs || msgs.length === 0) return container.innerHTML = '<p class="text-slate-500 text-center">コメントなし</p>';
+      container.innerHTML = msgs.map(m => `
+        <div class="bg-[#1e1e1e] p-2 rounded border border-[#333]">
+          <span class="font-bold text-indigo-400">${m.user_name.split('::')[0]}</span>
+          <p class="text-slate-200 mt-0.5 break-words">${m.content}</p>
+        </div>
+      `).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = document.getElementById('chat-user').value;
+      const content = document.getElementById('chat-content').value;
+      await supabase.from('messages').insert({ game_id: gameId, user_name: user, content });
+      document.getElementById('chat-content').value = '';
+      loadMessages();
+    });
+
+    // 起動
+    initEsbuild();
   </script>
 </body>
 </html>
