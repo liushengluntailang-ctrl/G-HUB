@@ -8,39 +8,47 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex justify-center items-center p-4">
-  <div class="max-w-md w-full bg-slate-800 p-6 rounded-xl border border-slate-700">
+  <div class="max-w-md w-full bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-indigo-400">ゲームを投稿</h1>
-      <a href="index.html" class="text-sm text-slate-400 hover:text-white">← 戻る</a>
+      <h1 class="text-2xl font-bold text-indigo-400">ゲームを公開</h1>
+      <a href="index.html" class="text-sm text-slate-400 hover:text-white">← 一覧へ戻る</a>
     </div>
 
     <form id="upload-form" class="space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">ゲームタイトル</label>
-        <input type="text" id="title" required class="w-full bg-slate-900 border border-slate-700 p-2 rounded focus:border-indigo-500 outline-none">
+        <input type="text" id="title" required placeholder="例: 超爽快シューティング" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg focus:border-indigo-500 outline-none">
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1">説明文</label>
-        <textarea id="desc" class="w-full bg-slate-900 border border-slate-700 p-2 rounded focus:border-indigo-500 outline-none"></textarea>
+        <label class="block text-sm font-medium mb-1">説明文・操作方法</label>
+        <textarea id="desc" rows="3" placeholder="矢印キーで移動、Spaceでジャンプ！" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg focus:border-indigo-500 outline-none"></textarea>
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1">ゲームのZipファイル (WebGLビルド一式)</label>
-        <input type="file" id="file" accept=".zip" required class="w-full text-slate-400 file:bg-slate-700 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:mr-3">
-        <p class="text-xs text-slate-400 mt-1">※ index.htmlを含むZipファイル</p>
+        <label class="block text-sm font-medium mb-1">ゲームZipファイル (WebGLビルド一式)</label>
+        <input type="file" id="file" accept=".zip" required class="w-full text-slate-400 file:bg-slate-700 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:mr-3 cursor-pointer">
+        <p class="text-xs text-indigo-300 mt-1.5">※ UnityなどのフォルダごとZip圧縮したものでも自動認識します</p>
       </div>
-      <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3 rounded-lg transition disabled:bg-slate-600">
-        ゲームを公開する
+      <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3 rounded-lg transition disabled:bg-slate-700">
+        ゲームをアップロード
       </button>
-      <p id="status" class="text-center text-sm text-indigo-300 mt-2"></p>
+      <div id="status" class="text-center text-sm text-indigo-300 font-mono mt-2"></div>
     </form>
   </div>
 
   <script>
     const proxyUrl = window.location.origin + '/supabase';
-    const supabase = window.supabase.createClient(
-      proxyUrl,
-      'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
-    );
+    const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
+
+    function getMimeType(filename) {
+      if (filename.endsWith('.html')) return 'text/html';
+      if (filename.endsWith('.js')) return 'application/javascript';
+      if (filename.endsWith('.css')) return 'text/css';
+      if (filename.endsWith('.wasm')) return 'application/wasm';
+      if (filename.endsWith('.json')) return 'application/json';
+      if (filename.endsWith('.png')) return 'image/png';
+      if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
+      return 'application/octet-stream';
+    }
 
     document.getElementById('upload-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -53,43 +61,49 @@
       if (!file || !title) return;
 
       btn.disabled = true;
-      status.innerText = 'Zipファイルを解析中...';
+      status.innerText = 'Zipファイルを解凍・分析中...';
 
       try {
         const zip = new JSZip();
         const zipContent = await zip.loadAsync(file);
         const gameId = crypto.randomUUID();
-        let hasIndexHtml = false;
+        let mainIndexPath = null;
 
-        const fileEntries = Object.keys(zipContent.files);
+        const fileEntries = Object.keys(zipContent.files).filter(name => !zipContent.files[name].dir);
+
+        // 最適な index.html を自動検出（一番階層が浅いものを優先）
+        for (const filename of fileEntries) {
+          if (filename.toLowerCase().endsWith('index.html')) {
+            if (!mainIndexPath || filename.split('/').length < mainIndexPath.split('/').length) {
+              mainIndexPath = filename;
+            }
+          }
+        }
+
+        if (!mainIndexPath) {
+          throw new Error('Zip内に index.html が見つかりませんでした。ビルドファイルを確認してください。');
+        }
+
         let count = 0;
-
         for (const filename of fileEntries) {
           const zipEntry = zipContent.files[filename];
-          if (zipEntry.dir) continue;
+          count++;
+          status.innerText = `転送中: (${count}/${fileEntries.length}) ${filename.split('/').pop()}`;
 
-          if (filename.endsWith('index.html')) hasIndexHtml = true;
-
-          status.innerText = `ファイルを転送中... (${++count}/${fileEntries.length})`;
-          
           const blob = await zipEntry.async('blob');
           const filePath = `${gameId}/${filename}`;
 
           const { error } = await supabase.storage.from('games').upload(filePath, blob, {
-            contentType: filename.endsWith('.html') ? 'text/html' : 
-                         filename.endsWith('.js') ? 'application/javascript' : 
-                         filename.endsWith('.wasm') ? 'application/wasm' : undefined,
+            contentType: getMimeType(filename),
             upsert: true
           });
 
           if (error) throw error;
         }
 
-        if (!hasIndexHtml) throw new Error('Zip内に index.html が見つかりませんでした。');
+        const { data: { publicUrl } } = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndexPath}`);
 
-        const { data: { publicUrl } } = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`);
-
-        status.innerText = '登録中...';
+        status.innerText = 'ゲーム情報を登録中...';
         const { error: dbError } = await supabase.from('games').insert({
           id: gameId,
           title,
@@ -102,7 +116,7 @@
         alert('ゲームの公開が完了しました！');
         window.location.href = `play.html?id=${gameId}`;
       } catch (err) {
-        alert('エラー: ' + err.message);
+        alert('アップロード失敗: ' + err.message);
         btn.disabled = false;
         status.innerText = '';
       }
