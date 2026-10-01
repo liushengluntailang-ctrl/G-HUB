@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <title>G-HUB - ゲームプラットフォーム</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 最新バージョンのSupabaseを指定 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen p-8">
   <div class="max-w-5xl mx-auto">
@@ -55,7 +56,7 @@
           `;
         });
       } catch (err) {
-        list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ プログラムエラー: ${err.message}</p>`;
+        list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ 通信エラー: ${err.message}</p>`;
       }
     }
     loadGames();
