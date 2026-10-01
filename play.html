@@ -8,6 +8,7 @@
 </head>
 <body class="bg-[#0b0f19] text-white min-h-screen p-4">
   <div class="max-w-7xl mx-auto">
+    <!-- ヘッダー -->
     <div class="flex justify-between items-center mb-4">
       <a href="index.html" class="text-indigo-400 hover:underline font-bold text-xs">← トップへ戻る</a>
       
@@ -16,10 +17,10 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <!-- コイン獲得通知バッジ -->
-        <span id="coin-reward" class="hidden bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-2.5 py-1 rounded-xl font-bold animate-bounce">
-          🪙 +10 G 獲得！
-        </span>
+        <!-- 🪙 投げ銭ボタン -->
+        <button onclick="sendTip(30)" id="tip-btn" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:opacity-90 px-3 py-1.5 rounded-xl font-bold text-xs text-slate-950 flex items-center gap-1 shadow">
+          🪙 30 G 投げ銭！
+        </button>
         <button onclick="addLike()" class="bg-rose-600/80 hover:bg-rose-600 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow">
           ❤️ <span id="like-count">0</span>
         </button>
@@ -33,12 +34,27 @@
       <div class="lg:col-span-3">
         <div class="flex items-baseline gap-3 mb-2">
           <h1 id="game-title" class="text-xl font-black text-slate-100">読み込み中...</h1>
+          <span id="price-badge" class="text-xs font-bold px-2 py-0.5 rounded-md"></span>
           <span id="game-platforms" class="text-xs bg-slate-800 px-2 py-0.5 rounded-md text-indigo-300 font-bold"></span>
           <span id="game-author" class="text-xs text-slate-500 font-mono"></span>
         </div>
 
+        <!-- ゲーム画面 ＆ 有料ロックオーバーレイ -->
         <div id="game-wrapper" class="bg-black rounded-3xl overflow-hidden border border-slate-800 aspect-video shadow-2xl relative">
           <iframe id="game-frame" src="" class="w-full h-full border-0" allow="autoplay; fullscreen; gamepad; xr-spatial-tracking" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
+
+          <!-- 🔒 有料ゲームのロック画面 -->
+          <div id="lock-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+            <span class="text-5xl mb-3">🔒</span>
+            <h2 class="text-2xl font-black text-white mb-1">このゲームは有料です</h2>
+            <p id="lock-msg" class="text-sm text-slate-400 mb-6">プレイするには G-coin で購入してください。</p>
+            <div class="flex flex-col items-center gap-3">
+              <button onclick="buyGame()" id="buy-btn" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-8 py-3.5 rounded-2xl text-base shadow-xl transition transform hover:scale-105">
+                💎 <span id="buy-price">100</span> G で購入してプレイ！
+              </button>
+              <span id="my-coins-info" class="text-xs text-amber-400 font-bold">あなたの所持コイン: --- G</span>
+            </div>
+          </div>
         </div>
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -64,7 +80,6 @@
           <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-1.5 text-xs font-mono"></div>
         </div>
 
-        <!-- ライブチャット ＆ スキン対応 -->
         <div class="bg-[#111827] border border-slate-800 rounded-3xl p-4 h-[370px] flex flex-col">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
             <h2 class="font-bold text-xs text-indigo-400">💬 ライブチャット</h2>
@@ -93,6 +108,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('id');
     let currentGame = null;
+    let currentUser = null;
+    let userCoins = 0;
     let mySkin = 'default';
 
     async function initGame() {
@@ -105,30 +122,152 @@
       document.getElementById('game-author').innerText = `by ${game.author_email || 'guest'}`;
       document.getElementById('game-desc').innerText = game.description || '説明はありません。';
       document.getElementById('like-count').innerText = game.likes_count || 0;
-      document.getElementById('game-frame').src = game.entry_url;
+
+      const priceBadge = document.getElementById('price-badge');
+      if (game.price_coins > 0) {
+        priceBadge.className = 'text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md';
+        priceBadge.innerText = `💎 ${game.price_coins} G`;
+      } else {
+        priceBadge.className = 'text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-md';
+        priceBadge.innerText = 'FREE';
+      }
 
       const plats = (game.platforms || 'pc').split(',').map(p => p === 'mobile' ? '📱 スマホ' : p === 'pad' ? '🎮 パッド' : '💻 PC').join(' / ');
       document.getElementById('game-platforms').innerText = plats;
 
+      // ユーザー確認
       const { data: { user } } = await supabase.auth.getUser();
+      currentUser = user;
+
       if (user) {
         if (user.email === game.author_email) document.getElementById('author-controls').classList.remove('hidden');
-
-        // プレイで +10 コイン獲得！
         const { data: prof } = await supabase.from('profiles').select('*').eq('email', user.email).single();
         if (prof) {
+          userCoins = prof.coins || 0;
           mySkin = prof.equipped_skin || 'default';
-          await supabase.from('profiles').update({ coins: (prof.coins || 0) + 10 }).eq('email', user.email);
-          document.getElementById('coin-reward').classList.remove('hidden');
+          document.getElementById('my-coins-info').innerText = `あなたの所持コイン: ${userCoins} G`;
         }
       }
 
+      // 有料ゲームのロック判定
+      if (game.price_coins > 0) {
+        let isPurchased = false;
+
+        if (user) {
+          // 作者本人なら無料パス
+          if (user.email === game.author_email) {
+            isPurchased = true;
+          } else {
+            // 購入履歴をチェック
+            const { data: purchase } = await supabase.from('purchases').select('*').eq('user_email', user.email).eq('game_id', gameId).single();
+            if (purchase) isPurchased = true;
+          }
+        }
+
+        if (!isPurchased) {
+          // ロック画面を表示
+          document.getElementById('lock-overlay').classList.remove('hidden');
+          document.getElementById('buy-price').innerText = game.price_coins;
+          if (!user) {
+            document.getElementById('buy-btn').innerText = '🔑 ログインして購入する';
+            document.getElementById('buy-btn').onclick = () => window.location.href = 'index.html';
+          }
+          return; // iframeを読み込まず終了
+        }
+      }
+
+      // アンロックまたは無料の場合、ゲーム読み込み
+      document.getElementById('game-frame').src = game.entry_url;
       supabase.from('games').update({ play_count: (game.play_count || 0) + 1 }).eq('id', gameId).then();
       loadScores();
       loadMessages();
     }
 
-    // チャットにスキンのクラスを付与
+    // 💎 ゲーム購入処理
+    window.buyGame = async () => {
+      if (!currentUser) return window.location.href = 'index.html';
+      if (userCoins < currentGame.price_coins) {
+        return alert(`コインが足りません！（必要: ${currentGame.price_coins} G / 所持: ${userCoins} G）\n他の無料ゲームを遊んでコインを貯めよう！`);
+      }
+
+      if (!confirm(`💎 ${currentGame.price_coins} G を支払ってこのゲームを購入しますか？`)) return;
+
+      try {
+        // 購入者のコイン減額
+        const newBuyerCoins = userCoins - currentGame.price_coins;
+        await supabase.from('profiles').update({ coins: newBuyerCoins }).eq('email', currentUser.email);
+
+        // 作者にコインとEXPを加算
+        if (currentGame.author_email && currentGame.author_email !== 'guest') {
+          const { data: authorProf } = await supabase.from('profiles').select('*').eq('email', currentGame.author_email).single();
+          if (authorProf) {
+            await supabase.from('profiles').update({
+              coins: (authorProf.coins || 0) + currentGame.price_coins,
+              dev_exp: (authorProf.dev_exp || 0) + currentGame.price_coins
+            }).eq('email', currentGame.author_email);
+          }
+        }
+
+        // 購入履歴テーブルに保存
+        await supabase.from('purchases').insert({
+          user_email: currentUser.email,
+          game_id: gameId
+        });
+
+        alert('🎉 購入が完了しました！永久に遊べます！');
+        document.getElementById('lock-overlay').classList.add('hidden');
+        document.getElementById('game-frame').src = currentGame.entry_url;
+      } catch (err) {
+        alert('購入エラー: ' + err.message);
+      }
+    };
+
+    // 🪙 作者への投げ銭（チップ）処理
+    window.sendTip = async (amount = 30) => {
+      if (!currentUser) return alert('投げ銭をするにはログインが必要です！');
+      if (currentUser.email === currentGame.author_email) return alert('自分自身には投げ銭できません');
+      if (userCoins < amount) return alert(`コインが足りません！（所持: ${userCoins} G / 必要: ${amount} G）`);
+
+      if (!confirm(`🪙 作者に ${amount} G のチップを投げ銭しますか？`)) return;
+
+      try {
+        // プレイヤーのコインを減らす
+        userCoins -= amount;
+        await supabase.from('profiles').update({ coins: userCoins }).eq('email', currentUser.email);
+
+        // 作者にコインと開発者EXPを加算
+        if (currentGame.author_email && currentGame.author_email !== 'guest') {
+          const { data: authorProf } = await supabase.from('profiles').select('*').eq('email', currentGame.author_email).single();
+          if (authorProf) {
+            await supabase.from('profiles').update({
+              coins: (authorProf.coins || 0) + amount,
+              dev_exp: (authorProf.dev_exp || 0) + (amount * 2) // 投げ銭はEXP2倍ボーナス！
+            }).eq('email', currentGame.author_email);
+          }
+        }
+
+        // 履歴保存
+        await supabase.from('tips').insert({
+          from_email: currentUser.email,
+          to_email: currentGame.author_email,
+          game_id: gameId,
+          amount: amount
+        });
+
+        // チャットにゴールドのチップ通知を投稿
+        await supabase.from('messages').insert({
+          game_id: gameId,
+          user_name: '🪙 SYSTEM::gold',
+          content: `🎉 ${currentUser.email.split('@')[0]} さんが作者に ${amount} G を投げ銭しました！！`
+        });
+
+        alert(`🎉 作者に ${amount} G を投げ銭しました！作者の開発者EXPが増加しました！`);
+        loadMessages();
+      } catch (err) {
+        alert('投げ銭エラー: ' + err.message);
+      }
+    };
+
     function getSkinClass(skin) {
       if (skin === 'emerald') return 'text-emerald-400 font-bold';
       if (skin === 'purple') return 'text-purple-400 font-bold drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]';
@@ -156,7 +295,6 @@
       e.preventDefault();
       const user = document.getElementById('chat-user').value;
       const content = document.getElementById('chat-content').value;
-      // スキン情報を名前に付与して送信
       await supabase.from('messages').insert({ game_id: gameId, user_name: `${user}::${mySkin}`, content });
       document.getElementById('chat-content').value = '';
       loadMessages();
@@ -224,7 +362,6 @@
     });
 
     initGame();
-    setInterval(loadMessages, 3000);
   </script>
 </body>
 </html>
