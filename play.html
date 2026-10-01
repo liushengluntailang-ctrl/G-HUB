@@ -2,56 +2,126 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>プレイ - G-HUB</title>
+  <title>プレイ & チャット - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
-<body class="bg-slate-950 text-white min-h-screen p-4 flex flex-col items-center">
-  <div class="w-full max-w-5xl flex justify-between items-center mb-4">
-    <a href="index.html" class="text-indigo-400 hover:underline">← 一覧に戻る</a>
-    <h1 id="game-title" class="text-xl font-bold">読み込み中...</h1>
-  </div>
+<body class="bg-slate-950 text-white min-h-screen p-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- ヘッダー -->
+    <div class="flex justify-between items-center mb-4">
+      <a href="index.html" class="text-indigo-400 hover:underline flex items-center gap-1 font-bold">← 一覧に戻る</a>
+      <h1 id="game-title" class="text-2xl font-black text-slate-100">読み込み中...</h1>
+    </div>
 
-  <div class="w-full max-w-5xl bg-black rounded-lg overflow-hidden border border-slate-800 aspect-video shadow-2xl">
-    <iframe
-      id="game-frame"
-      src=""
-      class="w-full h-full border-0"
-      allow="autoplay; fullscreen; gamepad"
-      sandbox="allow-scripts allow-same-origin"
-    ></iframe>
-  </div>
+    <!-- メインコンテンツ（左: ゲーム / 右: チャット） -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- ゲーム画面 (3カラム) -->
+      <div class="lg:col-span-3">
+        <div class="bg-black rounded-2xl overflow-hidden border border-slate-800 aspect-video shadow-2xl relative">
+          <iframe
+            id="game-frame"
+            src=""
+            class="w-full h-full border-0"
+            allow="autoplay; fullscreen; gamepad; xr-spatial-tracking"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+          ></iframe>
+        </div>
 
-  <div class="w-full max-w-5xl mt-6 bg-slate-900 p-6 rounded-lg border border-slate-800">
-    <h2 class="text-lg font-bold mb-2">ゲーム説明</h2>
-    <p id="game-desc" class="text-slate-400 whitespace-pre-wrap">説明はありません。</p>
+        <div class="mt-4 bg-slate-900 p-5 rounded-xl border border-slate-800">
+          <h2 class="text-lg font-bold text-indigo-400 mb-2">📋 ゲーム説明・操作方法</h2>
+          <p id="game-desc" class="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">説明はありません。</p>
+        </div>
+      </div>
+
+      <!-- チャット画面 (1カラム) -->
+      <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[580px]">
+        <h2 class="font-bold text-lg border-b border-slate-800 pb-2 mb-3 text-indigo-400 flex items-center gap-2">
+          💬 チャット・感想
+        </h2>
+
+        <!-- メッセージ一覧 -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 text-sm">
+          <p class="text-slate-500 text-center">メッセージを読み込み中...</p>
+        </div>
+
+        <!-- メッセージ送信フォーム -->
+        <form id="chat-form" class="mt-3 pt-3 border-t border-slate-800 space-y-2">
+          <input type="text" id="chat-user" placeholder="あなたの名前" required class="w-full bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-sm outline-none focus:border-indigo-500">
+          <div class="flex gap-2">
+            <input type="text" id="chat-content" placeholder="チャットを入力..." required class="flex-1 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-sm outline-none focus:border-indigo-500">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded font-bold text-sm">送信</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script>
     const proxyUrl = window.location.origin + '/supabase';
-    const supabase = window.supabase.createClient(
-      proxyUrl,
-      'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
-    );
+    const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
 
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('id');
 
+    // ゲーム情報取得
     async function loadGame() {
       if (!gameId) return;
-
       const { data: game, error } = await supabase.from('games').select('*').eq('id', gameId).single();
-      if (error || !game) {
-        alert('ゲームが見つかりませんでした');
-        return;
-      }
+      if (error || !game) return alert('ゲームが見つかりませんでした');
 
       document.getElementById('game-title').innerText = game.title;
       document.getElementById('game-desc').innerText = game.description || '説明はありません。';
       document.getElementById('game-frame').src = game.entry_url;
     }
 
+    // チャット読み込み
+    async function loadMessages() {
+      if (!gameId) return;
+      const { data: messages } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
+      const container = document.getElementById('chat-messages');
+
+      if (!messages || messages.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-center text-xs mt-4">まだチャットがありません。<br>最初のメッセージを送信しよう！</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      messages.forEach(m => {
+        container.innerHTML += `
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="font-bold text-indigo-400 text-xs">${m.user_name}</span>
+              <span class="text-[10px] text-slate-500">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+            <p class="text-slate-200 text-sm break-words">${m.content}</p>
+          </div>
+        `;
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // チャット送信
+    document.getElementById('chat-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = document.getElementById('chat-user').value;
+      const content = document.getElementById('chat-content').value;
+      if (!user || !content) return;
+
+      await supabase.from('messages').insert({
+        game_id: gameId,
+        user_name: user,
+        content: content
+      });
+
+      document.getElementById('chat-content').value = '';
+      loadMessages();
+    });
+
     loadGame();
+    loadMessages();
+    // 3秒ごとに新着メッセージを自動取得
+    setInterval(loadMessages, 3000);
   </script>
 </body>
 </html>
