@@ -2,51 +2,47 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ゲーム投稿 - G-HUB</title>
+  <title>ゲーム投稿・更新 - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex justify-center items-center p-4">
-  <div class="max-w-2xl w-full bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl">
+  <div class="max-w-xl w-full bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-black text-indigo-400">🚀 ゲームを公開する</h1>
+      <h1 id="page-title" class="text-2xl font-black text-indigo-400">🚀 ゲームを公開する</h1>
       <a href="index.html" class="text-sm text-slate-400 hover:text-white">← 一覧へ戻る</a>
     </div>
 
     <!-- 投稿モード切り替えタブ -->
     <div class="flex gap-2 mb-6 border-b border-slate-700 pb-3">
-      <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-4 py-2 font-bold text-sm rounded-lg bg-indigo-600 text-white">📦 WebGL/Zip投稿</button>
-      <button type="button" id="tab-code" onclick="switchMode('code')" class="px-4 py-2 font-bold text-sm rounded-lg bg-slate-700 text-slate-300">⚡ TS / TSX / HTMLコード直書き</button>
+      <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-4 py-2 font-bold text-sm rounded-lg bg-indigo-600 text-white">📦 Zipファイル</button>
+      <button type="button" id="tab-code" onclick="switchMode('code')" class="px-4 py-2 font-bold text-sm rounded-lg bg-slate-700 text-slate-300">⚡ TSX/HTMLコード直貼り</button>
     </div>
 
     <form id="upload-form" class="space-y-4">
       <div>
         <label class="block text-sm font-bold mb-1">ゲームタイトル</label>
-        <input type="text" id="title" required placeholder="例: 爆速クリッカーTS" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg outline-none focus:border-indigo-500">
+        <input type="text" id="title" required placeholder="タイトルを入力" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg outline-none focus:border-indigo-500">
       </div>
       <div>
-        <label class="block text-sm font-bold mb-1">説明・操作説明</label>
-        <textarea id="desc" rows="2" placeholder="クリックでスコアを稼ごう！" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg outline-none focus:border-indigo-500"></textarea>
+        <label class="block text-sm font-bold mb-1">説明・更新内容</label>
+        <textarea id="desc" rows="3" placeholder="説明やアップデート情報を入力" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg outline-none focus:border-indigo-500"></textarea>
       </div>
 
-      <!-- モードA: Zipアップロード -->
       <div id="zip-section">
-        <label class="block text-sm font-bold mb-1">WebGLビルドのZipファイル</label>
+        <label class="block text-sm font-bold mb-1">WebGLのZipファイル</label>
         <input type="file" id="file" accept=".zip" class="w-full text-slate-400 file:bg-slate-700 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:mr-3 cursor-pointer">
+        <p id="file-note" class="text-xs text-slate-400 mt-1">※更新時、ファイルを差し替えない場合は空欄でOK</p>
       </div>
 
-      <!-- モードB: TS / TSX / HTML コード直書き -->
       <div id="code-section" class="hidden">
-        <div class="flex justify-between items-center mb-1">
-          <label class="block text-sm font-bold">ソースコード (TypeScript / TSX / HTML)</label>
-          <span class="text-xs text-indigo-400">※ React(TSX)やCanvasスクリプトがそのまま動きます</span>
-        </div>
-        <textarea id="code" rows="8" placeholder="<h1>Hello Game</h1><script>...</script>" class="w-full font-mono text-xs bg-slate-950 border border-slate-700 p-3 rounded-lg outline-none focus:border-indigo-500 text-emerald-400"></textarea>
+        <label class="block text-sm font-bold mb-1">コード (TSX / JavaScript / HTML)</label>
+        <textarea id="code" rows="6" placeholder="<h1>Game</h1><script>...</script>" class="w-full font-mono text-xs bg-slate-950 border border-slate-700 p-3 rounded-lg outline-none text-emerald-400"></textarea>
       </div>
 
       <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3.5 rounded-xl transition shadow-lg mt-4">
-        ゲームを世界に公開！
+        公開する
       </button>
       <div id="status" class="text-center text-sm text-indigo-300 font-mono mt-2"></div>
     </form>
@@ -56,7 +52,10 @@
     const proxyUrl = window.location.origin + '/supabase';
     const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
     let currentMode = 'zip';
+
     window.switchMode = (mode) => {
       currentMode = mode;
       document.getElementById('zip-section').classList.toggle('hidden', mode !== 'zip');
@@ -65,77 +64,107 @@
       document.getElementById('tab-code').className = mode === 'code' ? 'px-4 py-2 font-bold text-sm rounded-lg bg-indigo-600 text-white' : 'px-4 py-2 font-bold text-sm rounded-lg bg-slate-700 text-slate-300';
     };
 
+    // アップデート（編集）モード時の初期読み込み
+    async function checkEditMode() {
+      if (!editId) return;
+      document.getElementById('page-title').innerText = '🛠️ ゲームをアップデート';
+      document.getElementById('submit-btn').innerText = 'アップデートを保存！';
+      const { data: game } = await supabase.from('games').select('*').eq('id', editId).single();
+      if (game) {
+        document.getElementById('title').value = game.title;
+        document.getElementById('desc').value = game.description || '';
+      }
+    }
+    checkEditMode();
+
     document.getElementById('upload-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('title').value;
       const desc = document.getElementById('desc').value;
       const btn = document.getElementById('submit-btn');
       const status = document.getElementById('status');
-      const gameId = crypto.randomUUID();
+      const gameId = editId || crypto.randomUUID();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const authorEmail = user ? user.email : 'guest';
 
       btn.disabled = true;
 
       try {
-        let entryUrl = '';
+        let entryUrl = null;
 
+        // コード直接入力の場合
         if (currentMode === 'code') {
-          // TS / TSX / HTMLコードの直接コンパイル・実行ラッパー生成
-          status.innerText = 'コードをゲーム化中...';
           const rawCode = document.getElementById('code').value;
-          const htmlWrapper = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <script src="https://cdn.tailwindcss.com"><\/script>
-              <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
-              <script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
-              <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
-            </head>
-            <body class="bg-black text-white min-h-screen flex items-center justify-center m-0">
-              <div id="root" class="w-full h-full flex items-center justify-center"></div>
-              <script type="text/babel" data-presets="react,typescript">
-                ${rawCode}
-              <\/script>
-            </body>
-            </html>
-          `;
-          const blob = new Blob([htmlWrapper], { type: 'text/html' });
-          await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html' });
-          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
-
+          if (rawCode) {
+            status.innerText = 'コード変換中...';
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com"><\/script><script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script></head><body class="bg-black text-white min-h-screen flex items-center justify-center m-0"><div id="root"></div><script type="text/babel">${rawCode}<\/script></body></html>`;
+            const blob = new Blob([html], { type: 'text/html' });
+            await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html', upsert: true });
+            entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
+          }
         } else {
-          // Zipアップロード処理
+          // Zipアップロードの場合
           const file = document.getElementById('file').files[0];
-          if (!file) throw new Error('Zipファイルを選択してください');
+          if (file) {
+            status.innerText = 'Zip解析中...';
+            const zip = new JSZip();
+            const zipContent = await zip.loadAsync(file);
+            let mainIndex = null;
+            const files = Object.keys(zipContent.files).filter(k => !zipContent.files[k].dir);
 
-          status.innerText = 'Zip解析中...';
-          const zip = new JSZip();
-          const zipContent = await zip.loadAsync(file);
-          let mainIndexPath = null;
-          const files = Object.keys(zipContent.files).filter(k => !zipContent.files[k].dir);
-
-          for (const f of files) {
-            if (f.toLowerCase().endsWith('index.html')) {
-              if (!mainIndexPath || f.split('/').length < mainIndexPath.split('/').length) mainIndexPath = f;
+            for (const f of files) {
+              if (f.toLowerCase().endsWith('index.html')) {
+                if (!mainIndex || f.split('/').length < mainIndex.split('/').length) mainIndex = f;
+              }
             }
-          }
-          if (!mainIndexPath) throw new Error('Zip内に index.html が見つかりませんでした');
+            if (!mainIndex) throw new Error('Zip内に index.html がありません');
 
-          let c = 0;
-          for (const f of files) {
-            status.innerText = `アップロード中: (${++c}/${files.length})`;
-            const blob = await zipContent.files[f].async('blob');
-            await supabase.storage.from('games').upload(`${gameId}/${f}`, blob, { upsert: true });
+            let c = 0;
+            for (const f of files) {
+              status.innerText = `転送中: (${++c}/${files.length})`;
+              const blob = await zipContent.files[f].async('blob');
+              await supabase.storage.from('games').upload(`${gameId}/${f}`, blob, { upsert: true });
+            }
+            entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndex}`).data.publicUrl;
           }
-          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndexPath}`).data.publicUrl;
         }
 
-        status.innerText = 'データベース保存中...';
-        await supabase.from('games').insert({ id: gameId, title, description: desc, entry_url: entryUrl, likes_count: 0, play_count: 0 });
+        if (editId) {
+          // アップデート処理
+          status.innerText = 'ゲーム情報を更新中...';
+          const updateData = { title, description: desc };
+          if (entryUrl) updateData.entry_url = entryUrl;
+          await supabase.from('games').update(updateData).eq('id', editId);
+          alert('ゲームをアップデートしました！');
+          window.location.href = `play.html?id=${editId}`;
+        } else {
+          // 新規投稿処理 ＋ 開発者経験値獲得
+          if (!entryUrl) throw new Error('ゲームファイルまたはコードを入力してください');
+          status.innerText = 'ゲームを登録中...';
+          await supabase.from('games').insert({
+            id: gameId,
+            title,
+            description: desc,
+            entry_url: entryUrl,
+            author_email: authorEmail,
+            likes_count: 0,
+            play_count: 0
+          });
 
-        alert('公開完了！');
-        window.location.href = `play.html?id=${gameId}`;
+          // 開発者レベルの経験値アップ（+100 EXP）
+          if (user) {
+            const { data: prof } = await supabase.from('profiles').select('*').eq('email', user.email).single();
+            if (prof) {
+              const newExp = (prof.dev_exp || 0) + 100;
+              const newLvl = Math.floor(newExp / 100) + 1;
+              await supabase.from('profiles').update({ dev_exp: newExp, dev_level: newLvl }).eq('email', user.email);
+            }
+          }
+
+          alert('ゲームを公開しました！（開発者EXP +100獲得！）');
+          window.location.href = `play.html?id=${gameId}`;
+        }
       } catch (err) {
         alert('エラー: ' + err.message);
         btn.disabled = false;
