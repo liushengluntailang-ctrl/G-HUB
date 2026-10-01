@@ -16,21 +16,29 @@
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- プレイヤー＆開発者レベルバッジ -->
+        <div id="user-levels" class="hidden flex items-center gap-2">
+          <span id="player-badge" class="bg-emerald-950 text-emerald-400 border border-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold">🎮 Lv.1</span>
+          <span id="dev-badge" class="bg-purple-950 text-purple-400 border border-purple-700 text-xs px-2.5 py-1 rounded-full font-bold">🛠️ Lv.1</span>
+        </div>
+
         <button onclick="openFriendModal()" class="bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition">
           👥 フレンド
         </button>
+
         <div id="auth-status">
           <button onclick="openAuthModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition">
             ログイン
           </button>
         </div>
+
         <a href="upload.html" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold text-sm shadow-lg transition">
           ＋ ゲーム投稿
         </a>
       </div>
     </header>
 
-    <!-- 検索 & フィルターバー -->
+    <!-- 検索 & フィルター -->
     <div class="flex flex-col md:flex-row gap-4 justify-between items-center mb-8">
       <input type="text" id="search-input" oninput="filterGames()" placeholder="🔍 ゲームタイトルで検索..." class="w-full md:w-80 bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-sm outline-none focus:border-indigo-500">
       <div class="flex gap-2">
@@ -52,17 +60,11 @@
         <h2 class="text-xl font-bold text-indigo-400">👥 フレンド一覧</h2>
         <button onclick="closeFriendModal()" class="text-slate-400 hover:text-white text-sm">✕ 閉じる</button>
       </div>
-
-      <!-- フレンド追加 -->
       <form id="friend-form" class="flex gap-2 mb-4">
-        <input type="email" id="friend-email" placeholder="友達のメールアドレスを入力" required class="flex-1 bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg text-sm outline-none">
+        <input type="email" id="friend-email" placeholder="友達のメールアドレス" required class="flex-1 bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg text-sm outline-none">
         <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 font-bold px-3 py-2 rounded-lg text-sm">追加</button>
       </form>
-
-      <!-- 一覧 -->
-      <div id="friends-list" class="space-y-2 max-h-60 overflow-y-auto">
-        <p class="text-slate-500 text-sm text-center">フレンドを読み込み中...</p>
-      </div>
+      <div id="friends-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
     </div>
   </div>
 
@@ -121,7 +123,6 @@
       `).join('');
     }
 
-    // 認証
     async function checkUser() {
       const { data: { user } } = await client.auth.getUser();
       currentUser = user;
@@ -131,6 +132,14 @@
           <span class="text-xs text-indigo-300 font-bold">👤 ${user.email.split('@')[0]}</span>
           <button onclick="logout()" class="text-xs text-slate-400 hover:text-rose-400 ml-2">ログアウト</button>
         `;
+
+        // レベル情報の取得
+        const { data: prof } = await client.from('profiles').select('*').eq('email', user.email).single();
+        if (prof) {
+          document.getElementById('user-levels').classList.remove('hidden');
+          document.getElementById('player-badge').innerText = `🎮 プレイヤー Lv.${prof.player_level || 1}`;
+          document.getElementById('dev-badge').innerText = `🛠️ 開発者 Lv.${prof.dev_level || 1}`;
+        }
       }
     }
 
@@ -151,7 +160,11 @@
       if (isSignUp) {
         const { error } = await client.auth.signUp({ email, password });
         if (error) alert(error.message);
-        else { alert('登録完了！'); window.location.reload(); }
+        else {
+          await client.from('profiles').insert({ email, player_level: 1, player_exp: 0, dev_level: 1, dev_exp: 0 });
+          alert('登録完了！');
+          window.location.reload();
+        }
       } else {
         const { error } = await client.auth.signInWithPassword({ email, password });
         if (error) alert(error.message);
@@ -159,7 +172,6 @@
       }
     };
 
-    // フレンド管理
     window.openFriendModal = async () => {
       if (!currentUser) return alert('フレンド機能を使うにはログインしてください！');
       document.getElementById('friend-modal').classList.remove('hidden');
@@ -170,7 +182,7 @@
     async function loadFriends() {
       const { data: friends } = await client.from('friends').select('*').eq('user_email', currentUser.email);
       const list = document.getElementById('friends-list');
-      if (!friends || friends.length === 0) return list.innerHTML = '<p class="text-slate-500 text-xs text-center">フレンドはまだいません。</p>';
+      if (!friends || friends.length === 0) return list.innerHTML = '<p class="text-slate-500 text-xs text-center">フレンドはいません</p>';
       list.innerHTML = friends.map(f => `
         <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-700 flex justify-between items-center text-sm">
           <span>🟢 ${f.friend_email}</span>
