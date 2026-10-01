@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>G-HUB - ゲームプラットフォーム</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 最新バージョンのSupabaseを指定 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen p-8">
@@ -20,8 +19,10 @@
   </div>
 
   <script type="module">
+    // Renderの中継サーバーを経由して通信（i-FILTER回避）
+    const proxyUrl = window.location.origin + '/supabase';
     const client = window.supabase.createClient(
-      'https://ddcnoghsiuxfhnwmtpyn.supabase.co',
+      proxyUrl,
       'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
     );
 
@@ -34,7 +35,7 @@
           .order('created_at', { ascending: false });
 
         if (error) {
-          list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ 読み込みエラー: ${error.message}</p>`;
+          list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ エラー: ${error.message}</p>`;
           return;
         }
 
