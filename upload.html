@@ -8,28 +8,45 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex justify-center items-center p-4">
-  <div class="max-w-md w-full bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
+  <div class="max-w-2xl w-full bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-indigo-400">ゲームを公開</h1>
+      <h1 class="text-2xl font-black text-indigo-400">🚀 ゲームを公開する</h1>
       <a href="index.html" class="text-sm text-slate-400 hover:text-white">← 一覧へ戻る</a>
+    </div>
+
+    <!-- 投稿モード切り替えタブ -->
+    <div class="flex gap-2 mb-6 border-b border-slate-700 pb-3">
+      <button type="button" id="tab-zip" onclick="switchMode('zip')" class="px-4 py-2 font-bold text-sm rounded-lg bg-indigo-600 text-white">📦 WebGL/Zip投稿</button>
+      <button type="button" id="tab-code" onclick="switchMode('code')" class="px-4 py-2 font-bold text-sm rounded-lg bg-slate-700 text-slate-300">⚡ TS / TSX / HTMLコード直書き</button>
     </div>
 
     <form id="upload-form" class="space-y-4">
       <div>
-        <label class="block text-sm font-medium mb-1">ゲームタイトル</label>
-        <input type="text" id="title" required placeholder="例: 超爽快シューティング" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg focus:border-indigo-500 outline-none">
+        <label class="block text-sm font-bold mb-1">ゲームタイトル</label>
+        <input type="text" id="title" required placeholder="例: 爆速クリッカーTS" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg outline-none focus:border-indigo-500">
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1">説明文・操作方法</label>
-        <textarea id="desc" rows="3" placeholder="矢印キーで移動、Spaceでジャンプ！" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg focus:border-indigo-500 outline-none"></textarea>
+        <label class="block text-sm font-bold mb-1">説明・操作説明</label>
+        <textarea id="desc" rows="2" placeholder="クリックでスコアを稼ごう！" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg outline-none focus:border-indigo-500"></textarea>
       </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">ゲームZipファイル (WebGLビルド一式)</label>
-        <input type="file" id="file" accept=".zip" required class="w-full text-slate-400 file:bg-slate-700 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:mr-3 cursor-pointer">
-        <p class="text-xs text-indigo-300 mt-1.5">※ UnityなどのフォルダごとZip圧縮したものでも自動認識します</p>
+
+      <!-- モードA: Zipアップロード -->
+      <div id="zip-section">
+        <label class="block text-sm font-bold mb-1">WebGLビルドのZipファイル</label>
+        <input type="file" id="file" accept=".zip" class="w-full text-slate-400 file:bg-slate-700 file:border-0 file:text-white file:px-4 file:py-2 file:rounded file:mr-3 cursor-pointer">
       </div>
-      <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3 rounded-lg transition disabled:bg-slate-700">
-        ゲームをアップロード
+
+      <!-- モードB: TS / TSX / HTML コード直書き -->
+      <div id="code-section" class="hidden">
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-sm font-bold">ソースコード (TypeScript / TSX / HTML)</label>
+          <span class="text-xs text-indigo-400">※ React(TSX)やCanvasスクリプトがそのまま動きます</span>
+        </div>
+        <textarea id="code" rows="8" placeholder="<h1>Hello Game</h1><script>...</script>" class="w-full font-mono text-xs bg-slate-950 border border-slate-700 p-3 rounded-lg outline-none focus:border-indigo-500 text-emerald-400"></textarea>
+      </div>
+
+      <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3.5 rounded-xl transition shadow-lg mt-4">
+        ゲームを世界に公開！
       </button>
       <div id="status" class="text-center text-sm text-indigo-300 font-mono mt-2"></div>
     </form>
@@ -39,84 +56,88 @@
     const proxyUrl = window.location.origin + '/supabase';
     const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
 
-    function getMimeType(filename) {
-      if (filename.endsWith('.html')) return 'text/html';
-      if (filename.endsWith('.js')) return 'application/javascript';
-      if (filename.endsWith('.css')) return 'text/css';
-      if (filename.endsWith('.wasm')) return 'application/wasm';
-      if (filename.endsWith('.json')) return 'application/json';
-      if (filename.endsWith('.png')) return 'image/png';
-      if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
-      return 'application/octet-stream';
-    }
+    let currentMode = 'zip';
+    window.switchMode = (mode) => {
+      currentMode = mode;
+      document.getElementById('zip-section').classList.toggle('hidden', mode !== 'zip');
+      document.getElementById('code-section').classList.toggle('hidden', mode !== 'code');
+      document.getElementById('tab-zip').className = mode === 'zip' ? 'px-4 py-2 font-bold text-sm rounded-lg bg-indigo-600 text-white' : 'px-4 py-2 font-bold text-sm rounded-lg bg-slate-700 text-slate-300';
+      document.getElementById('tab-code').className = mode === 'code' ? 'px-4 py-2 font-bold text-sm rounded-lg bg-indigo-600 text-white' : 'px-4 py-2 font-bold text-sm rounded-lg bg-slate-700 text-slate-300';
+    };
 
     document.getElementById('upload-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('title').value;
       const desc = document.getElementById('desc').value;
-      const file = document.getElementById('file').files[0];
       const btn = document.getElementById('submit-btn');
       const status = document.getElementById('status');
-
-      if (!file || !title) return;
+      const gameId = crypto.randomUUID();
 
       btn.disabled = true;
-      status.innerText = 'Zipファイルを解凍・分析中...';
 
       try {
-        const zip = new JSZip();
-        const zipContent = await zip.loadAsync(file);
-        const gameId = crypto.randomUUID();
-        let mainIndexPath = null;
+        let entryUrl = '';
 
-        const fileEntries = Object.keys(zipContent.files).filter(name => !zipContent.files[name].dir);
+        if (currentMode === 'code') {
+          // TS / TSX / HTMLコードの直接コンパイル・実行ラッパー生成
+          status.innerText = 'コードをゲーム化中...';
+          const rawCode = document.getElementById('code').value;
+          const htmlWrapper = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <script src="https://cdn.tailwindcss.com"><\/script>
+              <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+              <script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+              <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
+            </head>
+            <body class="bg-black text-white min-h-screen flex items-center justify-center m-0">
+              <div id="root" class="w-full h-full flex items-center justify-center"></div>
+              <script type="text/babel" data-presets="react,typescript">
+                ${rawCode}
+              <\/script>
+            </body>
+            </html>
+          `;
+          const blob = new Blob([htmlWrapper], { type: 'text/html' });
+          await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, { contentType: 'text/html' });
+          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
 
-        // 最適な index.html を自動検出（一番階層が浅いものを優先）
-        for (const filename of fileEntries) {
-          if (filename.toLowerCase().endsWith('index.html')) {
-            if (!mainIndexPath || filename.split('/').length < mainIndexPath.split('/').length) {
-              mainIndexPath = filename;
+        } else {
+          // Zipアップロード処理
+          const file = document.getElementById('file').files[0];
+          if (!file) throw new Error('Zipファイルを選択してください');
+
+          status.innerText = 'Zip解析中...';
+          const zip = new JSZip();
+          const zipContent = await zip.loadAsync(file);
+          let mainIndexPath = null;
+          const files = Object.keys(zipContent.files).filter(k => !zipContent.files[k].dir);
+
+          for (const f of files) {
+            if (f.toLowerCase().endsWith('index.html')) {
+              if (!mainIndexPath || f.split('/').length < mainIndexPath.split('/').length) mainIndexPath = f;
             }
           }
+          if (!mainIndexPath) throw new Error('Zip内に index.html が見つかりませんでした');
+
+          let c = 0;
+          for (const f of files) {
+            status.innerText = `アップロード中: (${++c}/${files.length})`;
+            const blob = await zipContent.files[f].async('blob');
+            await supabase.storage.from('games').upload(`${gameId}/${f}`, blob, { upsert: true });
+          }
+          entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndexPath}`).data.publicUrl;
         }
 
-        if (!mainIndexPath) {
-          throw new Error('Zip内に index.html が見つかりませんでした。ビルドファイルを確認してください。');
-        }
+        status.innerText = 'データベース保存中...';
+        await supabase.from('games').insert({ id: gameId, title, description: desc, entry_url: entryUrl, likes_count: 0, play_count: 0 });
 
-        let count = 0;
-        for (const filename of fileEntries) {
-          const zipEntry = zipContent.files[filename];
-          count++;
-          status.innerText = `転送中: (${count}/${fileEntries.length}) ${filename.split('/').pop()}`;
-
-          const blob = await zipEntry.async('blob');
-          const filePath = `${gameId}/${filename}`;
-
-          const { error } = await supabase.storage.from('games').upload(filePath, blob, {
-            contentType: getMimeType(filename),
-            upsert: true
-          });
-
-          if (error) throw error;
-        }
-
-        const { data: { publicUrl } } = supabase.storage.from('games').getPublicUrl(`${gameId}/${mainIndexPath}`);
-
-        status.innerText = 'ゲーム情報を登録中...';
-        const { error: dbError } = await supabase.from('games').insert({
-          id: gameId,
-          title,
-          description: desc,
-          entry_url: publicUrl,
-        });
-
-        if (dbError) throw dbError;
-
-        alert('ゲームの公開が完了しました！');
+        alert('公開完了！');
         window.location.href = `play.html?id=${gameId}`;
       } catch (err) {
-        alert('アップロード失敗: ' + err.message);
+        alert('エラー: ' + err.message);
         btn.disabled = false;
         status.innerText = '';
       }
