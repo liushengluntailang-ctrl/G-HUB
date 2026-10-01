@@ -10,6 +10,7 @@
   <div class="fixed inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none"></div>
 
   <div class="relative max-w-7xl mx-auto px-4 py-6">
+    <!-- ナビバー -->
     <header class="flex flex-wrap justify-between items-center gap-4 mb-8 bg-[#111827]/80 backdrop-blur-md p-4 rounded-2xl border border-slate-800 shadow-2xl">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-xl flex items-center justify-center text-xl font-black shadow-lg">G</div>
@@ -20,12 +21,21 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <div id="user-stats" class="hidden flex items-center gap-2">
-          <div class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold text-amber-400">
-            🔥 <span id="streak-count">1</span>日連続
+        <!-- 🪙 G-コイン ＆ 🎰 ガチャ -->
+        <div id="coin-section" class="hidden flex items-center gap-2">
+          <div class="bg-amber-950/60 border border-amber-500/40 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold text-amber-400">
+            🪙 <span id="coin-count">0</span> G
           </div>
-          <span id="player-badge" class="bg-indigo-950/80 border border-indigo-500/50 text-indigo-300 text-xs px-3 py-1.5 rounded-xl font-bold">🎮 Lv.1</span>
-          <span id="dev-badge" class="bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs px-3 py-1.5 rounded-xl font-bold">🛠️ Lv.1</span>
+          <button onclick="openGachaModal()" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-950 shadow-lg transition">
+            🎰 ガチャ
+          </button>
+        </div>
+
+        <div id="user-stats" class="hidden flex items-center gap-2">
+          <div class="bg-amber-500/20 border border-amber-500/40 px-2.5 py-1.5 rounded-xl text-xs font-bold text-amber-400">
+            🔥 <span id="streak-count">1</span>日
+          </div>
+          <span id="player-badge" class="bg-indigo-950/80 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-1.5 rounded-xl font-bold">🎮 Lv.1</span>
         </div>
 
         <button onclick="openFriendModal()" class="bg-slate-800/80 hover:bg-slate-700 text-indigo-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1">
@@ -39,60 +49,36 @@
         </div>
 
         <a href="upload.html" class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition">
-          ＋ ゲームを公開
+          ＋ ゲーム公開
         </a>
       </div>
     </header>
 
-    <!-- ヒーローエリア（デイリーミッション ＆ G-AI ソムリエ） -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-      <div class="lg:col-span-2 bg-gradient-to-br from-indigo-950/50 via-slate-900/80 to-purple-950/50 p-6 rounded-3xl border border-indigo-500/30 shadow-2xl">
-        <div class="flex justify-between items-center mb-3">
-          <span class="text-xs font-bold text-amber-400 tracking-wider">⚡ DAILY QUESTS</span>
-          <span class="text-[11px] text-slate-400">毎日クリアしてEXPをGET！</span>
+    <!-- 🎉 お祭り特設バナー（第1回 G-HUB杯） -->
+    <div class="bg-gradient-to-r from-amber-500/20 via-pink-600/20 to-purple-600/20 border border-amber-500/40 p-5 rounded-3xl mb-8 flex flex-col md:flex-row justify-between items-center gap-4 shadow-2xl relative overflow-hidden">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">開催中のお祭り</span>
+          <span class="text-xs text-amber-300 font-mono">🏆 第1回 G-HUB杯</span>
         </div>
-        <h2 class="text-xl font-black text-white mb-4">今日のデイリーミッション</h2>
-        <div class="grid grid-cols-3 gap-3 text-xs font-semibold">
-          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
-            <span class="text-slate-300">🎮 ゲームを遊ぶ</span>
-            <span class="text-indigo-400 font-mono mt-2 font-bold">+50 EXP</span>
-          </div>
-          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
-            <span class="text-slate-300">❤️ いいねをする</span>
-            <span class="text-rose-400 font-mono mt-2 font-bold">+20 EXP</span>
-          </div>
-          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
-            <span class="text-slate-300">💬 チャット投稿</span>
-            <span class="text-purple-400 font-mono mt-2 font-bold">+30 EXP</span>
-          </div>
-        </div>
+        <h2 class="text-xl font-black text-white">テーマ：「1分で遊べる神ゲー」コンテスト！</h2>
+        <p class="text-xs text-slate-300 mt-1">エントリー作品をプレイして投票しよう！優勝者には限定「初代チャンピオン」称号を授与！</p>
       </div>
-
-      <!-- G-AI ソムリエボックス -->
-      <div class="bg-gradient-to-br from-purple-900/40 via-slate-900 to-pink-950/40 p-6 rounded-3xl border border-purple-500/40 flex flex-col justify-between shadow-2xl">
-        <div>
-          <span class="text-[10px] bg-purple-500/30 text-purple-300 border border-purple-500/50 px-2 py-0.5 rounded-full font-bold">POWERED BY QWEN 2.5</span>
-          <h3 class="text-lg font-black text-purple-200 mt-2">🤖 G-AI ソムリエ</h3>
-          <p class="text-xs text-slate-400 mt-1">気分に合わせてピッタリのゲームを推薦します。</p>
-        </div>
-        <div class="mt-3">
-          <div class="flex gap-2">
-            <input type="text" id="ai-chat-input" placeholder="例: スカッとするアクションある？" class="flex-1 bg-slate-950 border border-purple-500/30 p-2 rounded-xl text-xs outline-none text-white">
-            <button onclick="askG_AI()" id="ai-chat-btn" class="bg-purple-600 hover:bg-purple-500 text-xs font-bold px-3 py-2 rounded-xl">聞く</button>
-          </div>
-          <p id="ai-reply" class="text-xs text-purple-200 mt-2 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto"></p>
-        </div>
+      <div class="flex items-center gap-3">
+        <button onclick="filterEventGames()" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs shadow-lg transition whitespace-nowrap">
+          🎉 エントリー作品を見る
+        </button>
       </div>
     </div>
 
     <!-- 検索 & フィルター -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-      <div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+      <div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0" id="tag-filters">
         <button onclick="setTag('All')" class="tag-btn active px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition">すべて</button>
         <button onclick="setTag('Action')" class="tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">アクション</button>
         <button onclick="setTag('Puzzle')" class="tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">パズル</button>
-        <button onclick="setTag('RPG')" class="tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">RPG</button>
-        <button onclick="setTag('Horror')" class="tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">ホラー</button>
+        <button onclick="filterPlatform('mobile')" class="tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-emerald-400 hover:text-emerald-300 transition">📱 スマホ対応</button>
+        <button onclick="filterPlatform('pad')" class="tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-purple-400 hover:text-purple-300 transition">🎮 パッド対応</button>
       </div>
 
       <div class="flex gap-2 w-full md:w-auto">
@@ -105,6 +91,23 @@
 
     <div id="game-list" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <p class="text-slate-500 col-span-4 text-center py-10 font-mono">ゲームを読み込み中...</p>
+    </div>
+  </div>
+
+  <!-- 🎰 ガチャモーダル -->
+  <div id="gacha-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-[#111827] border border-amber-500/40 p-6 rounded-3xl max-w-sm w-full shadow-2xl text-center">
+      <h2 class="text-xl font-black text-amber-400 mb-1">🎰 ネオンスキンガチャ</h2>
+      <p class="text-xs text-slate-400 mb-4">1回 100 G（チャットの名前が光る！）</p>
+
+      <div id="gacha-display" class="bg-slate-950 p-6 rounded-2xl border border-slate-800 mb-4 flex items-center justify-center min-h-[100px]">
+        <span class="text-slate-500 text-xs">ボタンを押してガチャを回そう！</span>
+      </div>
+
+      <button onclick="playGacha()" class="w-full bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black py-3 rounded-xl text-sm shadow-lg mb-2">
+        100 G で回す！
+      </button>
+      <button onclick="closeGachaModal()" class="text-slate-500 hover:text-slate-300 text-xs py-1">閉じる</button>
     </div>
   </div>
 
@@ -146,8 +149,11 @@
 
     let allGames = [];
     let currentTag = 'All';
+    let currentPlat = null;
+    let onlyEvent = false;
     let currentSort = 'likes_count';
     let currentUser = null;
+    let userCoins = 0;
 
     async function loadGames() {
       const { data } = await client.from('games').select('*').order(currentSort, { ascending: false });
@@ -157,8 +163,22 @@
 
     window.setTag = (tag) => {
       currentTag = tag;
-      document.querySelectorAll('.tag-btn').forEach(b => b.className = 'tag-btn px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition');
-      event.target.className = 'tag-btn active px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition';
+      currentPlat = null;
+      onlyEvent = false;
+      renderGames();
+    };
+
+    window.filterPlatform = (plat) => {
+      currentPlat = plat;
+      currentTag = 'All';
+      onlyEvent = false;
+      renderGames();
+    };
+
+    window.filterEventGames = () => {
+      onlyEvent = true;
+      currentTag = 'All';
+      currentPlat = null;
       renderGames();
     };
 
@@ -173,62 +193,75 @@
     function renderGames() {
       const q = document.getElementById('search-input').value.toLowerCase();
       let filtered = allGames.filter(g => g.title.toLowerCase().includes(q));
+
+      if (onlyEvent) filtered = filtered.filter(g => g.is_event);
+      if (currentPlat) filtered = filtered.filter(g => (g.platforms || '').includes(currentPlat));
       if (currentTag !== 'All') filtered = filtered.filter(g => g.tag === currentTag);
 
       const list = document.getElementById('game-list');
       if (filtered.length === 0) return list.innerHTML = '<p class="text-slate-500 col-span-4 text-center py-10 font-mono">ゲームがありません。</p>';
 
-      list.innerHTML = filtered.map(g => `
-        <a href="play.html?id=${g.id}" class="group bg-[#111827] border border-slate-800/80 rounded-2xl overflow-hidden hover:border-indigo-500/80 hover:-translate-y-1.5 transition duration-300 block shadow-xl">
-          <div class="aspect-video relative overflow-hidden bg-slate-950 flex items-center justify-center">
-            ${g.thumbnail_url 
-              ? `<img src="${g.thumbnail_url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">`
-              : `<div class="text-4xl group-hover:scale-110 transition duration-300">🕹️</div>`
-            }
-            <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold px-2 py-0.5 rounded-md text-indigo-300">
-              ${g.tag || 'Game'}
-            </span>
-          </div>
-          <div class="p-4">
-            <h2 class="font-bold text-sm text-slate-100 group-hover:text-indigo-400 transition truncate">${g.title}</h2>
-            <p class="text-slate-400 text-xs mt-1 line-clamp-2">${g.description || '説明なし'}</p>
-            <div class="mt-3 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400 font-bold font-mono">
-              <span class="text-rose-400">❤️ ${g.likes_count || 0}</span>
-              <span>🎮 ${g.play_count || 0} plays</span>
+      list.innerHTML = filtered.map(g => {
+        const plats = (g.platforms || 'pc').split(',');
+        const badges = plats.map(p => p === 'mobile' ? '📱' : p === 'pad' ? '🎮' : '💻').join(' ');
+
+        return `
+          <a href="play.html?id=${g.id}" class="group bg-[#111827] border border-slate-800/80 rounded-2xl overflow-hidden hover:border-indigo-500/80 hover:-translate-y-1.5 transition duration-300 block shadow-xl relative">
+            ${g.is_event ? '<span class="absolute top-2 right-2 z-10 bg-amber-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow">🎉 G-HUB杯</span>' : ''}
+            <div class="aspect-video relative overflow-hidden bg-slate-950 flex items-center justify-center">
+              ${g.thumbnail_url 
+                ? `<img src="${g.thumbnail_url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">`
+                : `<div class="text-4xl group-hover:scale-110 transition duration-300">🕹️</div>`
+              }
+              <div class="absolute bottom-2 left-2 flex gap-1">
+                <span class="bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-bold px-2 py-0.5 rounded-md text-indigo-300">
+                  ${badges}
+                </span>
+                <span class="bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-bold px-2 py-0.5 rounded-md text-purple-300">
+                  ${g.tag || 'Game'}
+                </span>
+              </div>
             </div>
-          </div>
-        </a>
-      `).join('');
+            <div class="p-4">
+              <h2 class="font-bold text-sm text-slate-100 group-hover:text-indigo-400 transition truncate">${g.title}</h2>
+              <p class="text-slate-400 text-xs mt-1 line-clamp-2">${g.description || '説明なし'}</p>
+              <div class="mt-3 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400 font-bold font-mono">
+                <span class="text-rose-400">❤️ ${g.likes_count || 0}</span>
+                <span>🎮 ${g.play_count || 0} plays</span>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
     }
 
-    // G-AI ソムリエ相談
-    window.askG_AI = async () => {
-      const q = document.getElementById('ai-chat-input').value;
-      if (!q) return;
-      const btn = document.getElementById('ai-chat-btn');
-      const replyEl = document.getElementById('ai-reply');
-      btn.disabled = true;
-      replyEl.innerText = '🤖 考え中...';
+    // ガチャシステム
+    const SKINS = [
+      { id: 'emerald', name: '🟢 エメラルドネオン', class: 'text-emerald-400 font-bold' },
+      { id: 'purple', name: '🟣 サイバーパープル', class: 'text-purple-400 font-bold drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]' },
+      { id: 'gold', name: '🟡 ゴールドレジェンド', class: 'text-amber-300 font-black drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' },
+      { id: 'rainbow', name: '🌈 ハイパーレインボー', class: 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500 bg-clip-text text-transparent font-black animate-pulse' }
+    ];
 
-      const gameSummary = allGames.map(g => `・タイトル:${g.title}, ジャンル:${g.tag}, 説明:${g.description || 'なし'}`).join('\n');
+    window.openGachaModal = () => document.getElementById('gacha-modal').classList.remove('hidden');
+    window.closeGachaModal = () => document.getElementById('gacha-modal').classList.add('hidden');
 
-      try {
-        const res = await fetch('/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt: 'You are G-AI, a gaming sommelier on G-HUB. Recommend 1-2 games from the provided list based on the user request. Be friendly, energetic, and speak in Japanese.',
-            userPrompt: `現在遊べるゲーム一覧:\n${gameSummary}\n\nユーザーの要望: ${q}`,
-            maxTokens: 500
-          })
-        });
-        const data = await res.json();
-        replyEl.innerText = data.reply;
-      } catch (err) {
-        replyEl.innerText = 'エラー: ' + err.message;
-      } finally {
-        btn.disabled = false;
-      }
+    window.playGacha = async () => {
+      if (userCoins < 100) return alert('コインが足りません！（ゲームを遊んでコインを貯めよう！）');
+      
+      const newCoins = userCoins - 100;
+      const wonSkin = SKINS[Math.floor(Math.random() * SKINS.length)];
+      
+      await client.from('profiles').update({ coins: newCoins, equipped_skin: wonSkin.id }).eq('email', currentUser.email);
+      userCoins = newCoins;
+      document.getElementById('coin-count').innerText = newCoins;
+
+      document.getElementById('gacha-display').innerHTML = `
+        <div>
+          <span class="text-xs text-amber-400 font-bold block mb-1">🎉 スキン獲得＆自動装備！</span>
+          <span class="text-lg ${wonSkin.class}">${wonSkin.name}</span>
+        </div>
+      `;
     };
 
     async function checkUser() {
@@ -242,9 +275,11 @@
         `;
         const { data: prof } = await client.from('profiles').select('*').eq('email', user.email).single();
         if (prof) {
+          userCoins = prof.coins || 100;
+          document.getElementById('coin-section').classList.remove('hidden');
+          document.getElementById('coin-count').innerText = userCoins;
           document.getElementById('user-stats').classList.remove('hidden');
           document.getElementById('player-badge').innerText = `🎮 Lv.${prof.player_level || 1}`;
-          document.getElementById('dev-badge').innerText = `🛠️ Lv.${prof.dev_level || 1}`;
           document.getElementById('streak-count').innerText = prof.streak_count || 1;
         }
       }
@@ -268,8 +303,8 @@
         const { error } = await client.auth.signUp({ email, password });
         if (error) alert(error.message);
         else {
-          await client.from('profiles').insert({ email, player_level: 1, player_exp: 0, dev_level: 1, dev_exp: 0, streak_count: 1, last_login: new Date().toISOString().split('T')[0] });
-          alert('登録完了！');
+          await client.from('profiles').insert({ email, coins: 100, player_level: 1, player_exp: 0, dev_level: 1, dev_exp: 0, streak_count: 1, last_login: new Date().toISOString().split('T')[0] });
+          alert('登録完了！ボーナス 100 G をプレゼントしました！');
           window.location.reload();
         }
       } else {
