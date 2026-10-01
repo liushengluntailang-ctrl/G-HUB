@@ -18,33 +18,45 @@
     </div>
   </div>
 
-  <script>
-    const supabase = window.supabase.createClient(
+  <script type="module">
+    const client = window.supabase.createClient(
       'https://ddcnoghsiuxfhnwmtpyn.supabase.co',
       'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
     );
 
     async function loadGames() {
-      const { data: games } = await supabase.from('games').select('*').order('created_at', { ascending: false });
       const list = document.getElementById('game-list');
-      list.innerHTML = '';
+      try {
+        const { data: games, error } = await client
+          .from('games')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (!games || games.length === 0) {
-        list.innerHTML = '<p class="text-slate-500">ゲームがまだありません。「ゲームを投稿」から追加してください。</p>';
-        return;
+        if (error) {
+          list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ 読み込みエラー: ${error.message}</p>`;
+          return;
+        }
+
+        if (!games || games.length === 0) {
+          list.innerHTML = '<p class="text-slate-400 col-span-3">まだゲームがありません。「＋ ゲームを投稿」から追加してください。</p>';
+          return;
+        }
+
+        list.innerHTML = '';
+        games.forEach(g => {
+          list.innerHTML += `
+            <a href="play.html?id=${g.id}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-indigo-500 transition block">
+              <div class="bg-slate-950 aspect-video flex items-center justify-center text-4xl">🕹️</div>
+              <div class="p-4">
+                <h2 class="font-bold text-lg text-slate-100">${g.title}</h2>
+                <p class="text-slate-400 text-sm mt-1">${g.description || ''}</p>
+              </div>
+            </a>
+          `;
+        });
+      } catch (err) {
+        list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ プログラムエラー: ${err.message}</p>`;
       }
-
-      games.forEach(g => {
-        list.innerHTML += `
-          <a href="play.html?id=${g.id}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-indigo-500 transition block">
-            <div class="bg-slate-950 aspect-video flex items-center justify-center text-4xl">🕹️</div>
-            <div class="p-4">
-              <h2 class="font-bold text-lg text-slate-100">${g.title}</h2>
-              <p class="text-slate-400 text-sm mt-1">${g.description || ''}</p>
-            </div>
-          </a>
-        `;
-      });
     }
     loadGames();
   </script>
