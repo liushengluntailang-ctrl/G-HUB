@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>プレイ & チャット - G-HUB</title>
+  <title>プレイ & コミュニティ - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
@@ -10,49 +10,72 @@
   <div class="max-w-7xl mx-auto">
     <!-- ヘッダー -->
     <div class="flex justify-between items-center mb-4">
-      <a href="index.html" class="text-indigo-400 hover:underline flex items-center gap-1 font-bold">← 一覧に戻る</a>
-      <h1 id="game-title" class="text-2xl font-black text-slate-100">読み込み中...</h1>
+      <a href="index.html" class="text-indigo-400 hover:underline font-bold">← 一覧に戻る</a>
+      <div class="flex items-center gap-3">
+        <button onclick="addLike()" class="bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 shadow">
+          ❤️ <span id="like-count">0</span> いいね
+        </button>
+        <button onclick="toggleFullscreen()" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-sm border border-slate-700">
+          ⛶ フルスクリーン
+        </button>
+      </div>
     </div>
 
-    <!-- メインコンテンツ（左: ゲーム / 右: チャット） -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <!-- ゲーム画面 (3カラム) -->
+      <!-- ゲームエリア -->
       <div class="lg:col-span-3">
-        <div class="bg-black rounded-2xl overflow-hidden border border-slate-800 aspect-video shadow-2xl relative">
-          <iframe
-            id="game-frame"
-            src=""
-            class="w-full h-full border-0"
-            allow="autoplay; fullscreen; gamepad; xr-spatial-tracking"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
-          ></iframe>
+        <h1 id="game-title" class="text-2xl font-black mb-3 text-slate-100">読み込み中...</h1>
+        <div id="game-wrapper" class="bg-black rounded-2xl overflow-hidden border border-slate-800 aspect-video shadow-2xl relative">
+          <iframe id="game-frame" src="" class="w-full h-full border-0" allow="autoplay; fullscreen; gamepad; xr-spatial-tracking" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
         </div>
 
-        <div class="mt-4 bg-slate-900 p-5 rounded-xl border border-slate-800">
-          <h2 class="text-lg font-bold text-indigo-400 mb-2">📋 ゲーム説明・操作方法</h2>
-          <p id="game-desc" class="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">説明はありません。</p>
+        <!-- 説明 ＆ ランキングスコア送信 -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
+            <h2 class="text-base font-bold text-indigo-400 mb-2">📋 ゲーム説明・操作方法</h2>
+            <p id="game-desc" class="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">説明はありません。</p>
+          </div>
+
+          <!-- スコア登録フォーム -->
+          <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
+            <h2 class="text-base font-bold text-yellow-400 mb-2">🏆 ハイスコアを登録する</h2>
+            <form id="score-form" class="flex gap-2">
+              <input type="text" id="score-player" placeholder="名前" required class="w-1/3 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-sm outline-none focus:border-yellow-400">
+              <input type="number" id="score-value" placeholder="スコア" required class="w-1/3 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-sm outline-none focus:border-yellow-400">
+              <button type="submit" class="w-1/3 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold px-3 py-1.5 rounded text-sm">記録！</button>
+            </form>
+          </div>
         </div>
       </div>
 
-      <!-- チャット画面 (1カラム) -->
-      <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[580px]">
-        <h2 class="font-bold text-lg border-b border-slate-800 pb-2 mb-3 text-indigo-400 flex items-center gap-2">
-          💬 チャット・感想
-        </h2>
-
-        <!-- メッセージ一覧 -->
-        <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 text-sm">
-          <p class="text-slate-500 text-center">メッセージを読み込み中...</p>
+      <!-- 右サイドバー: ランキング ＆ チャット -->
+      <div class="lg:col-span-1 space-y-4">
+        <!-- リーダーボード -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-[240px] flex flex-col">
+          <h2 class="font-bold text-sm text-yellow-400 border-b border-slate-800 pb-2 mb-2 flex items-center gap-1.5">
+            🏆 ハイスコアランキング
+          </h2>
+          <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-1.5 text-xs">
+            <p class="text-slate-500 text-center">読み込み中...</p>
+          </div>
         </div>
 
-        <!-- メッセージ送信フォーム -->
-        <form id="chat-form" class="mt-3 pt-3 border-t border-slate-800 space-y-2">
-          <input type="text" id="chat-user" placeholder="あなたの名前" required class="w-full bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-sm outline-none focus:border-indigo-500">
-          <div class="flex gap-2">
-            <input type="text" id="chat-content" placeholder="チャットを入力..." required class="flex-1 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-sm outline-none focus:border-indigo-500">
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded font-bold text-sm">送信</button>
+        <!-- チャット -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-[350px] flex flex-col">
+          <h2 class="font-bold text-sm text-indigo-400 border-b border-slate-800 pb-2 mb-2 flex items-center gap-1.5">
+            💬 チャット
+          </h2>
+          <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+            <p class="text-slate-500 text-center">チャット読み込み中...</p>
           </div>
-        </form>
+          <form id="chat-form" class="mt-2 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+            <input type="text" id="chat-user" placeholder="名前" required class="bg-slate-950 border border-slate-700 px-2.5 py-1 rounded text-xs outline-none">
+            <div class="flex gap-1.5">
+              <input type="text" id="chat-content" placeholder="コメント..." required class="flex-1 bg-slate-950 border border-slate-700 px-2.5 py-1 rounded text-xs outline-none">
+              <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded font-bold text-xs">送信</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -60,67 +83,88 @@
   <script>
     const proxyUrl = window.location.origin + '/supabase';
     const supabase = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
-
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('id');
 
-    // ゲーム情報取得
-    async function loadGame() {
+    async function initGame() {
       if (!gameId) return;
-      const { data: game, error } = await supabase.from('games').select('*').eq('id', gameId).single();
-      if (error || !game) return alert('ゲームが見つかりませんでした');
-
+      const { data: game } = await supabase.from('games').select('*').eq('id', gameId).single();
+      if (!game) return;
       document.getElementById('game-title').innerText = game.title;
       document.getElementById('game-desc').innerText = game.description || '説明はありません。';
+      document.getElementById('like-count').innerText = game.likes_count || 0;
       document.getElementById('game-frame').src = game.entry_url;
+
+      // プレイ回数カウントアップ
+      supabase.from('games').update({ play_count: (game.play_count || 0) + 1 }).eq('id', gameId).then();
+
+      loadScores();
+      loadMessages();
     }
 
-    // チャット読み込み
+    // フルスクリーン切り替え
+    window.toggleFullscreen = () => {
+      const frame = document.getElementById('game-wrapper');
+      if (!document.fullscreenElement) frame.requestFullscreen();
+      else document.exitFullscreen();
+    };
+
+    // いいね追加
+    window.addLike = async () => {
+      const { data: game } = await supabase.from('games').select('likes_count').eq('id', gameId).single();
+      const newCount = (game?.likes_count || 0) + 1;
+      await supabase.from('games').update({ likes_count: newCount }).eq('id', gameId);
+      document.getElementById('like-count').innerText = newCount;
+    };
+
+    // ランキング取得
+    async function loadScores() {
+      const { data: scores } = await supabase.from('leaderboards').select('*').eq('game_id', gameId).order('score', { ascending: false }).limit(10);
+      const list = document.getElementById('leaderboard-list');
+      if (!scores || scores.length === 0) return list.innerHTML = '<p class="text-slate-500 text-center">スコアはまだありません</p>';
+      list.innerHTML = scores.map((s, idx) => `
+        <div class="flex justify-between items-center bg-slate-950 p-1.5 rounded border border-slate-800">
+          <span class="font-bold ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-amber-600' : 'text-slate-400'}">#${idx+1} ${s.player_name}</span>
+          <span class="font-mono font-bold text-yellow-500">${s.score} pt</span>
+        </div>
+      `).join('');
+    }
+
+    // スコア登録
+    document.getElementById('score-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const player_name = document.getElementById('score-player').value;
+      const score = parseInt(document.getElementById('score-value').value);
+      await supabase.from('leaderboards').insert({ game_id: gameId, player_name, score });
+      alert('スコアを登録しました！');
+      document.getElementById('score-value').value = '';
+      loadScores();
+    });
+
+    // チャット取得
     async function loadMessages() {
-      if (!gameId) return;
-      const { data: messages } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
+      const { data: msgs } = await supabase.from('messages').select('*').eq('game_id', gameId).order('created_at', { ascending: true });
       const container = document.getElementById('chat-messages');
-
-      if (!messages || messages.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-center text-xs mt-4">まだチャットがありません。<br>最初のメッセージを送信しよう！</p>';
-        return;
-      }
-
-      container.innerHTML = '';
-      messages.forEach(m => {
-        container.innerHTML += `
-          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-            <div class="flex justify-between items-baseline mb-1">
-              <span class="font-bold text-indigo-400 text-xs">${m.user_name}</span>
-              <span class="text-[10px] text-slate-500">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-            </div>
-            <p class="text-slate-200 text-sm break-words">${m.content}</p>
-          </div>
-        `;
-      });
+      if (!msgs || msgs.length === 0) return container.innerHTML = '<p class="text-slate-500 text-center">最初のコメントを書こう！</p>';
+      container.innerHTML = msgs.map(m => `
+        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+          <span class="font-bold text-indigo-400">${m.user_name}</span>
+          <p class="text-slate-200 mt-0.5 break-words">${m.content}</p>
+        </div>
+      `).join('');
       container.scrollTop = container.scrollHeight;
     }
 
-    // チャット送信
     document.getElementById('chat-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const user = document.getElementById('chat-user').value;
       const content = document.getElementById('chat-content').value;
-      if (!user || !content) return;
-
-      await supabase.from('messages').insert({
-        game_id: gameId,
-        user_name: user,
-        content: content
-      });
-
+      await supabase.from('messages').insert({ game_id: gameId, user_name: user, content });
       document.getElementById('chat-content').value = '';
       loadMessages();
     });
 
-    loadGame();
-    loadMessages();
-    // 3秒ごとに新着メッセージを自動取得
+    initGame();
     setInterval(loadMessages, 3000);
   </script>
 </body>
