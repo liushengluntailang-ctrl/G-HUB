@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>プレイ & コミュニティ - G-HUB</title>
+  <title>プレイ - G-HUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
-<body class="bg-[#0b0f19] text-white min-h-screen p-4">
+<body class="bg-[#0b0f19] text-white min-h-screen p-4 font-sans">
   <div class="max-w-7xl mx-auto">
     <!-- ヘッダー -->
     <div class="flex justify-between items-center mb-4">
@@ -17,7 +17,10 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <!-- 🪙 投げ銭ボタン -->
+        <!-- 🚀 別タブ直接起動ボタン（iframe制限を完全突破） -->
+        <a id="direct-link" href="#" target="_blank" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 px-3 py-1.5 rounded-xl font-bold text-xs text-slate-950 flex items-center gap-1 shadow">
+          🚀 別タブで開く
+        </a>
         <button onclick="sendTip(30)" id="tip-btn" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:opacity-90 px-3 py-1.5 rounded-xl font-bold text-xs text-slate-950 flex items-center gap-1 shadow">
           🪙 30 G 投げ銭！
         </button>
@@ -39,11 +42,17 @@
           <span id="game-author" class="text-xs text-slate-500 font-mono"></span>
         </div>
 
-        <!-- ゲーム画面 ＆ 有料ロックオーバーレイ -->
+        <!-- 3D・ボクセルゲーム完全対応 iframe -->
         <div id="game-wrapper" class="bg-black rounded-3xl overflow-hidden border border-slate-800 aspect-video shadow-2xl relative">
-          <iframe id="game-frame" src="" class="w-full h-full border-0" allow="autoplay; fullscreen; gamepad; xr-spatial-tracking" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
+          <iframe
+            id="game-frame"
+            src=""
+            class="w-full h-full border-0 bg-black"
+            allow="autoplay; fullscreen; gamepad; xr-spatial-tracking; pointer-lock"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-pointer-lock"
+          ></iframe>
 
-          <!-- 🔒 有料ゲームのロック画面 -->
+          <!-- 有料ゲームのロック画面 -->
           <div id="lock-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
             <span class="text-5xl mb-3">🔒</span>
             <h2 class="text-2xl font-black text-white mb-1">このゲームは有料です</h2>
@@ -152,52 +161,51 @@
       // 有料ゲームのロック判定
       if (game.price_coins > 0) {
         let isPurchased = false;
-
         if (user) {
-          // 作者本人なら無料パス
-          if (user.email === game.author_email) {
-            isPurchased = true;
-          } else {
-            // 購入履歴をチェック
+          if (user.email === game.author_email) isPurchased = true;
+          else {
             const { data: purchase } = await supabase.from('purchases').select('*').eq('user_email', user.email).eq('game_id', gameId).single();
             if (purchase) isPurchased = true;
           }
         }
 
         if (!isPurchased) {
-          // ロック画面を表示
           document.getElementById('lock-overlay').classList.remove('hidden');
           document.getElementById('buy-price').innerText = game.price_coins;
           if (!user) {
             document.getElementById('buy-btn').innerText = '🔑 ログインして購入する';
             document.getElementById('buy-btn').onclick = () => window.location.href = 'index.html';
           }
-          return; // iframeを読み込まず終了
+          return;
         }
       }
 
-      // アンロックまたは無料の場合、ゲーム読み込み
-      document.getElementById('game-frame').src = game.entry_url;
+      // ★ i-FILTER回避：生Supabase URLをRenderプロキシURLに自動置換！
+      let safeUrl = game.entry_url;
+      if (safeUrl.includes('supabase.co')) {
+        safeUrl = safeUrl.replace(/https:\/\/[^/]+\.supabase\.co/, window.location.origin + '/supabase');
+      }
+
+      document.getElementById('game-frame').src = safeUrl;
+      document.getElementById('direct-link').href = safeUrl;
+
       supabase.from('games').update({ play_count: (game.play_count || 0) + 1 }).eq('id', gameId).then();
       loadScores();
       loadMessages();
     }
 
-    // 💎 ゲーム購入処理
+    // ゲーム購入処理
     window.buyGame = async () => {
       if (!currentUser) return window.location.href = 'index.html';
       if (userCoins < currentGame.price_coins) {
-        return alert(`コインが足りません！（必要: ${currentGame.price_coins} G / 所持: ${userCoins} G）\n他の無料ゲームを遊んでコインを貯めよう！`);
+        return alert(`コインが足りません！（必要: ${currentGame.price_coins} G / 所持: ${userCoins} G）`);
       }
-
-      if (!confirm(`💎 ${currentGame.price_coins} G を支払ってこのゲームを購入しますか？`)) return;
+      if (!confirm(`💎 ${currentGame.price_coins} G を支払って購入しますか？`)) return;
 
       try {
-        // 購入者のコイン減額
         const newBuyerCoins = userCoins - currentGame.price_coins;
         await supabase.from('profiles').update({ coins: newBuyerCoins }).eq('email', currentUser.email);
 
-        // 作者にコインとEXPを加算
         if (currentGame.author_email && currentGame.author_email !== 'guest') {
           const { data: authorProf } = await supabase.from('profiles').select('*').eq('email', currentGame.author_email).single();
           if (authorProf) {
@@ -208,64 +216,43 @@
           }
         }
 
-        // 購入履歴テーブルに保存
-        await supabase.from('purchases').insert({
-          user_email: currentUser.email,
-          game_id: gameId
-        });
-
-        alert('🎉 購入が完了しました！永久に遊べます！');
+        await supabase.from('purchases').insert({ user_email: currentUser.email, game_id: gameId });
+        alert('🎉 購入完了！');
         document.getElementById('lock-overlay').classList.add('hidden');
-        document.getElementById('game-frame').src = currentGame.entry_url;
-      } catch (err) {
-        alert('購入エラー: ' + err.message);
-      }
+        initGame();
+      } catch (err) { alert('購入エラー: ' + err.message); }
     };
 
-    // 🪙 作者への投げ銭（チップ）処理
+    // 投げ銭
     window.sendTip = async (amount = 30) => {
       if (!currentUser) return alert('投げ銭をするにはログインが必要です！');
       if (currentUser.email === currentGame.author_email) return alert('自分自身には投げ銭できません');
-      if (userCoins < amount) return alert(`コインが足りません！（所持: ${userCoins} G / 必要: ${amount} G）`);
-
-      if (!confirm(`🪙 作者に ${amount} G のチップを投げ銭しますか？`)) return;
+      if (userCoins < amount) return alert(`コインが足りません！（所持: ${userCoins} G）`);
+      if (!confirm(`🪙 作者に ${amount} G 投げ銭しますか？`)) return;
 
       try {
-        // プレイヤーのコインを減らす
         userCoins -= amount;
         await supabase.from('profiles').update({ coins: userCoins }).eq('email', currentUser.email);
 
-        // 作者にコインと開発者EXPを加算
         if (currentGame.author_email && currentGame.author_email !== 'guest') {
           const { data: authorProf } = await supabase.from('profiles').select('*').eq('email', currentGame.author_email).single();
           if (authorProf) {
             await supabase.from('profiles').update({
               coins: (authorProf.coins || 0) + amount,
-              dev_exp: (authorProf.dev_exp || 0) + (amount * 2) // 投げ銭はEXP2倍ボーナス！
+              dev_exp: (authorProf.dev_exp || 0) + (amount * 2)
             }).eq('email', currentGame.author_email);
           }
         }
 
-        // 履歴保存
-        await supabase.from('tips').insert({
-          from_email: currentUser.email,
-          to_email: currentGame.author_email,
-          game_id: gameId,
-          amount: amount
-        });
-
-        // チャットにゴールドのチップ通知を投稿
         await supabase.from('messages').insert({
           game_id: gameId,
           user_name: '🪙 SYSTEM::gold',
           content: `🎉 ${currentUser.email.split('@')[0]} さんが作者に ${amount} G を投げ銭しました！！`
         });
 
-        alert(`🎉 作者に ${amount} G を投げ銭しました！作者の開発者EXPが増加しました！`);
+        alert(`🎉 作者に ${amount} G を投げ銭しました！`);
         loadMessages();
-      } catch (err) {
-        alert('投げ銭エラー: ' + err.message);
-      }
+      } catch (err) { alert('エラー: ' + err.message); }
     };
 
     function getSkinClass(skin) {
