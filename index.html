@@ -8,31 +8,62 @@
 </head>
 <body class="bg-slate-900 text-white min-h-screen p-8">
   <div class="max-w-5xl mx-auto">
-    <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
-      <h1 class="text-3xl font-extrabold text-indigo-400">🎮 G-HUB</h1>
-      <a href="upload.html" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold">＋ ゲームを投稿</a>
+    <!-- ナビバー -->
+    <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-5">
+      <div class="flex items-center gap-4">
+        <h1 class="text-3xl font-black text-indigo-400 tracking-wider">🎮 G-HUB</h1>
+        <span class="text-xs bg-indigo-900 text-indigo-300 font-bold px-2.5 py-1 rounded-full border border-indigo-700">コミュニティ版</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- ログインユーザー表示エリア -->
+        <div id="auth-status" class="flex items-center gap-2">
+          <button onclick="openAuthModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition">
+            ログイン / 登録
+          </button>
+        </div>
+        <a href="upload.html" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold text-sm shadow-lg transition">
+          ＋ ゲームを投稿
+        </a>
+      </div>
     </header>
 
+    <!-- ゲーム一覧 -->
     <div id="game-list" class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <p class="text-slate-500">ゲームを読み込み中...</p>
     </div>
   </div>
 
-  <script type="module">
-    // Renderの中継サーバーを経由して通信（i-FILTER回避）
-    const proxyUrl = window.location.origin + '/supabase';
-    const client = window.supabase.createClient(
-      proxyUrl,
-      'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj'
-    );
+  <!-- ログイン・登録モーダル -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl">
+      <h2 id="auth-title" class="text-xl font-bold mb-4 text-indigo-400">ログイン</h2>
+      <div class="space-y-3">
+        <input type="email" id="auth-email" placeholder="メールアドレス" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg text-sm outline-none focus:border-indigo-500">
+        <input type="password" id="auth-password" placeholder="パスワード(6文字以上)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-lg text-sm outline-none focus:border-indigo-500">
+        <button id="auth-submit-btn" onclick="handleAuth()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg font-bold text-sm transition">
+          ログインする
+        </button>
+      </div>
+      <div class="mt-4 text-center text-xs text-slate-400">
+        <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="hover:text-indigo-400 underline">
+          アカウントをお持ちでない方は「新規登録」
+        </button>
+      </div>
+      <button onclick="closeAuthModal()" class="mt-3 w-full text-slate-500 hover:text-slate-300 text-xs py-1">閉じる</button>
+    </div>
+  </div>
 
+  <script type="module">
+    const proxyUrl = window.location.origin + '/supabase';
+    const client = window.supabase.createClient(proxyUrl, 'sb_publishable_cSX9rcWTjbX6lWfyT1KLNQ_tUFYuXtj');
+    window.client = client;
+
+    // ゲーム一覧取得
     async function loadGames() {
       const list = document.getElementById('game-list');
       try {
-        const { data: games, error } = await client
-          .from('games')
-          .select('*')
-          .order('created_at', { ascending: false });
+        const { data: games, error } = await client.from('games').select('*').order('created_at', { ascending: false });
 
         if (error) {
           list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ エラー: ${error.message}</p>`;
@@ -47,11 +78,11 @@
         list.innerHTML = '';
         games.forEach(g => {
           list.innerHTML += `
-            <a href="play.html?id=${g.id}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-indigo-500 transition block">
+            <a href="play.html?id=${g.id}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-indigo-500 hover:-translate-y-1 transition duration-200 block shadow-lg">
               <div class="bg-slate-950 aspect-video flex items-center justify-center text-4xl">🕹️</div>
               <div class="p-4">
                 <h2 class="font-bold text-lg text-slate-100">${g.title}</h2>
-                <p class="text-slate-400 text-sm mt-1">${g.description || ''}</p>
+                <p class="text-slate-400 text-sm mt-1 line-clamp-2">${g.description || '説明なし'}</p>
               </div>
             </a>
           `;
@@ -60,7 +91,55 @@
         list.innerHTML = `<p class="text-red-400 col-span-3">⚠️ 通信エラー: ${err.message}</p>`;
       }
     }
+
+    // 認証状態の監視
+    async function checkUser() {
+      const { data: { user } } = await client.auth.getUser();
+      const statusDiv = document.getElementById('auth-status');
+      if (user) {
+        statusDiv.innerHTML = `
+          <span class="text-xs text-indigo-300 font-bold">👤 ${user.email.split('@')[0]}</span>
+          <button onclick="logout()" class="text-xs text-slate-400 hover:text-rose-400 ml-2">ログアウト</button>
+        `;
+      }
+    }
+
+    window.logout = async () => {
+      await client.auth.signOut();
+      window.location.reload();
+    };
+
+    let isSignUp = false;
+    window.openAuthModal = () => document.getElementById('auth-modal').classList.remove('hidden');
+    window.closeAuthModal = () => document.getElementById('auth-modal').classList.add('hidden');
+    window.toggleAuthMode = () => {
+      isSignUp = !isSignUp;
+      document.getElementById('auth-title').innerText = isSignUp ? '新規アカウント登録' : 'ログイン';
+      document.getElementById('auth-submit-btn').innerText = isSignUp ? '登録する' : 'ログインする';
+      document.getElementById('auth-toggle-btn').innerText = isSignUp ? '既にアカウントをお持ちの方は「ログイン」' : 'アカウントをお持ちでない方は「新規登録」';
+    };
+
+    window.handleAuth = async () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) return alert('入力してください');
+
+      if (isSignUp) {
+        const { error } = await client.auth.signUp({ email, password });
+        if (error) alert(error.message);
+        else alert('登録完了！そのままログインできます。');
+      } else {
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+        else {
+          alert('ログイン成功！');
+          window.location.reload();
+        }
+      }
+    };
+
     loadGames();
+    checkUser();
   </script>
 </body>
 </html>
