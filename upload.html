@@ -7,6 +7,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/lib/browser.min.js"></script>
+  <!-- 画面キャプチャ用ライブラリ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="bg-[#1e1e1e] text-white min-h-screen p-4 flex justify-center items-center font-sans">
   <div class="max-w-6xl w-full bg-[#252526] p-6 rounded-2xl border border-[#333] shadow-2xl flex flex-col gap-4">
@@ -22,14 +24,24 @@
       
       <!-- サイドバー -->
       <div class="lg:col-span-1 flex flex-col gap-3 text-xs">
-        <!-- ドロップゾーン (.zip と .html の両方を受け付ける) -->
-        <div id="drop-zone" class="border-2 border-dashed border-[#444] hover:border-indigo-500 rounded-xl p-6 text-center bg-[#2d2d2d] cursor-pointer transition">
+        <div id="drop-zone" class="border-2 border-dashed border-[#444] hover:border-indigo-500 rounded-xl p-5 text-center bg-[#2d2d2d] cursor-pointer transition">
           <p class="font-bold text-sm text-slate-200">📁 .zip または .html をドロップ</p>
-          <p class="text-[10px] text-slate-400 mt-1">Vite/React Zip も 通常のHTMLも自動判別します</p>
+          <p class="text-[10px] text-slate-400 mt-1">Vite/React TSX も 通常HTMLも自動判別</p>
           <input type="file" id="file-input" accept=".zip,.html" class="hidden">
         </div>
 
         <div id="status" class="p-2 rounded bg-[#2e7d32] text-center font-bold text-xs font-mono">エンジン準備中...</div>
+
+        <!-- サムネイルプレビュー表示枠 -->
+        <div class="bg-[#1e1e1e] p-2.5 rounded-xl border border-[#333] flex items-center gap-3">
+          <div id="thumb-preview" class="w-16 h-12 bg-slate-900 border border-[#444] rounded flex items-center justify-center text-xs text-slate-500 overflow-hidden">
+            未設定
+          </div>
+          <div class="flex-1">
+            <span class="font-bold block text-slate-300">サムネイル画像</span>
+            <span class="text-[10px] text-slate-400">右のプレビューから「📸 撮影」で即時セット！</span>
+          </div>
+        </div>
 
         <!-- メタ情報入力 -->
         <div class="space-y-2 bg-[#1e1e1e] p-3 rounded-xl border border-[#333]">
@@ -64,8 +76,7 @@
           </div>
         </div>
 
-        <!-- ログ画面 -->
-        <div id="terminal" class="bg-[#0e0e0e] text-[#4af626] font-mono text-[10px] p-2.5 rounded h-28 overflow-y-auto border border-[#333] whitespace-pre-wrap">--- ログ ---<br></div>
+        <div id="terminal" class="bg-[#0e0e0e] text-[#4af626] font-mono text-[10px] p-2.5 rounded h-24 overflow-y-auto border border-[#333] whitespace-pre-wrap">--- ログ ---<br></div>
 
         <button type="button" onclick="publishToGHub()" id="publish-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3 rounded-xl shadow-lg transition text-xs">
           🚀 このゲームをG-HUBに公開する
@@ -76,7 +87,13 @@
       <div class="lg:col-span-2 flex flex-col h-[560px] bg-[#1e1e1e] rounded-xl border border-[#333] overflow-hidden">
         <div class="h-10 bg-[#2d2d2d] border-b border-[#333] flex justify-between items-center px-4 text-xs text-[#ccc]">
           <span class="font-bold">Preview</span>
-          <button id="clear-data-btn" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded text-xs">🗑️ セーブ消去</button>
+          <div class="flex gap-2">
+            <!-- 📸 1秒サムネ撮影ボタン -->
+            <button type="button" onclick="captureThumbnail()" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-2.5 py-1 rounded text-xs shadow transition flex items-center gap-1">
+              📸 この瞬間をサムネにする
+            </button>
+            <button id="clear-data-btn" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-2 py-1 rounded text-xs">🗑️ セーブ消去</button>
+          </div>
         </div>
         <iframe id="preview-iframe" class="flex-1 w-full h-full border-none bg-white" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-pointer-lock"></iframe>
       </div>
@@ -96,13 +113,34 @@
     const clearDataBtn = document.getElementById('clear-data-btn');
 
     let esbuildReady = false;
-    let finalPayload = null; // アップロードするBlob (HTML または Zip)
-    let payloadType = 'html'; // 'html' または 'zip'
+    let finalPayload = null;
+    let payloadType = 'html';
+    let capturedThumbnailBlob = null; // 撮影されたサムネBlob
 
     function log(msg) {
       terminal.innerText += msg + '\n';
       terminal.scrollTop = terminal.scrollHeight;
     }
+
+    // 📸 1秒サムネキャプチャ処理
+    window.captureThumbnail = async () => {
+      if (!iframe.contentDocument && !iframe.contentWindow) return alert("ゲーム画面が読み込まれていません！");
+      log("📸 サムネイルをキャプチャ中...");
+
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        const canvas = await html2canvas(doc.body, { width: 480, height: 270, useCORS: true });
+        
+        canvas.toBlob(blob => {
+          capturedThumbnailBlob = blob;
+          const url = URL.createObjectURL(blob);
+          document.getElementById('thumb-preview').innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+          log("✅ サムネイルの撮影が完了しました！");
+        }, 'image/jpeg', 0.85);
+      } catch (err) {
+        log("❌ キャプチャ失敗: " + err.message);
+      }
+    };
 
     clearDataBtn.addEventListener('click', () => {
       if (!iframe.srcdoc) return alert("ゲームが読み込まれていません");
@@ -114,13 +152,12 @@
       log("🗑️ セーブデータを消去しました。");
     });
 
-    // esbuild-wasm 初期化
     async function initEsbuild() {
       try {
         await esbuild.initialize({ wasmURL: 'https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/esbuild.wasm' });
         esbuildReady = true;
         statusEl.innerText = "⚡ エンジン準備完了";
-        log("✅ esbuild-wasm エンジンの準備が完了しました。");
+        log("✅ esbuild-wasm エンジン準備完了。");
       } catch (e) { log("❌ 初期化失敗: " + e.message); }
     }
     initEsbuild();
@@ -135,24 +172,20 @@
       if (e.target.files.length > 0) handleFile(e.target.files[0]);
     });
 
-    // ★ .html と .zip の振り分け処理 ★
     async function handleFile(file) {
       if (!file) return;
 
-      // 1. 普通の .html ファイルの場合
       if (file.name.toLowerCase().endsWith('.html')) {
         log(`\n📄 単一HTMLファイルを検出: ${file.name}`);
         document.getElementById('game-title').value = file.name.replace('.html', '');
-        
         const htmlText = await file.text();
         iframe.srcdoc = htmlText;
         finalPayload = new Blob([htmlText], { type: 'text/html' });
         payloadType = 'html';
-        log('🚀 プレビュー描画完了！右側でゲームが動きます！');
+        log('🚀 プレビュー描画完了！');
         return;
       }
 
-      // 2. .zip ファイルの場合（あのエンジンを起動）
       if (file.name.toLowerCase().endsWith('.zip')) {
         await processZip(file);
       } else {
@@ -160,9 +193,8 @@
       }
     }
 
-    // ★ あのエンジンの Zip 処理 ★
     async function processZip(file) {
-      if (!esbuildReady) return alert("esbuild の準備中です。少々お待ちください。");
+      if (!esbuildReady) return alert("esbuild 準備中...");
       document.getElementById('game-title').value = file.name.replace('.zip', '');
       log(`\n📦 Zipファイルを解析中: ${file.name}`);
 
@@ -190,9 +222,8 @@
         const entryPath = entryCandidates.find(e => files[e] !== undefined);
 
         if (!entryPath) {
-          // エントリポイントがない静的HTMLゲーム
           iframe.srcdoc = html;
-          finalPayload = file; // そのままZipとして保存
+          finalPayload = file;
           payloadType = 'zip';
           return log('🚀 プレビュー描画完了！');
         }
@@ -231,9 +262,7 @@
             build.onLoad({ filter: /.*/, namespace: 'zip-vfs' }, args => {
               const content = files[args.path];
               if (content === undefined) return { errors: [{ text: `File not found: ${args.path}` }] };
-              if (args.path.endsWith('.css')) {
-                return { contents: `const s=document.createElement('style');s.textContent=${JSON.stringify(content)};document.head.appendChild(s);`, loader: 'js' };
-              }
+              if (args.path.endsWith('.css')) return { contents: `const s=document.createElement('style');s.textContent=${JSON.stringify(content)};document.head.appendChild(s);`, loader: 'js' };
               let loader = args.path.endsWith('.tsx') ? 'tsx' : args.path.endsWith('.ts') ? 'ts' : args.path.endsWith('.jsx') ? 'jsx' : 'js';
               return { contents: content, loader };
             });
@@ -272,7 +301,6 @@
       }
     }
 
-    // ★ G-HUB 本番公開 ★
     async function publishToGHub() {
       const title = document.getElementById('game-title').value;
       const tag = document.getElementById('game-tag').value;
@@ -281,10 +309,10 @@
       const btn = document.getElementById('publish-btn');
 
       if (!title) return alert('タイトルを入力してください！');
-      if (!finalPayload) return alert('ファイルをドロップしてプレビューを動かしてから公開してください！');
+      if (!finalPayload) return alert('ゲームを読み込んでから公開してください！');
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return alert('公開するにはログインが必要です！トップページでログインしてください。');
+      if (!user) return alert('公開するにはログインが必要です！');
 
       btn.disabled = true;
       log('\n🚀 G-HUBにアップロード中...');
@@ -297,8 +325,16 @@
           contentType: payloadType === 'html' ? 'text/html' : 'application/zip',
           upsert: true
         });
-
         const entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${filename}`).data.publicUrl;
+
+        // サムネイル画像があればアップロード
+        let thumbnailUrl = null;
+        if (capturedThumbnailBlob) {
+          log('📸 サムネイル画像を保存中...');
+          const thumbPath = `${gameId}/thumbnail.jpg`;
+          await supabase.storage.from('games').upload(thumbPath, capturedThumbnailBlob, { contentType: 'image/jpeg', upsert: true });
+          thumbnailUrl = supabase.storage.from('games').getPublicUrl(thumbPath).data.publicUrl;
+        }
 
         await supabase.from('games').insert({
           id: gameId,
@@ -306,6 +342,7 @@
           tag,
           description: desc,
           entry_url: entryUrl,
+          thumbnail_url: thumbnailUrl,
           author_email: user.email,
           platforms: 'pc',
           price_coins: price,
@@ -313,7 +350,7 @@
           play_count: 0
         });
 
-        log('🎉 公開完了！プレイ画面へ移動します...');
+        log('🎉 公開完了！');
         alert('ゲームを公開しました！');
         window.location.href = `play.html?id=${gameId}`;
       } catch (err) {
