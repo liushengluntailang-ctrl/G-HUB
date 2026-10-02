@@ -48,8 +48,8 @@
       </div>
     </header>
 
-    <!-- ★ ログイン中ユーザー専用：マイステータス盤（ここに追加！） ★ -->
-    <div id="my-profile-banner" class="hidden bg-gradient-to-r from-indigo-950/60 via-slate-900 to-purple-950/60 border border-indigo-500/40 p-5 rounded-3xl mb-8 shadow-2xl">
+    <!-- マイステータス盤 -->
+    <div id="my-profile-banner" class="hidden bg-gradient-to-r from-indigo-950/60 via-slate-900 to-purple-950/60 border border-indigo-500/40 p-5 rounded-3xl mb-6 shadow-2xl">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-2xl shadow-lg border border-white/20">
@@ -64,7 +64,6 @@
           </div>
         </div>
 
-        <!-- コイン ＆ レベルバッジ一覧 -->
         <div class="flex flex-wrap items-center gap-3">
           <div class="bg-slate-950/80 border border-amber-500/50 px-4 py-2 rounded-2xl text-center">
             <span class="text-[10px] text-slate-400 block font-bold">所持コイン</span>
@@ -88,19 +87,50 @@
       </div>
     </div>
 
-    <!-- お祭り特設バナー -->
-    <div class="bg-gradient-to-r from-amber-500/20 via-pink-600/20 to-purple-600/20 border border-amber-500/40 p-5 rounded-3xl mb-8 flex flex-col md:flex-row justify-between items-center gap-4 shadow-2xl">
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span class="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">開催中</span>
-          <span class="text-xs text-amber-300 font-mono">🏆 第1回 G-HUB杯</span>
+    <!-- お祭り特設バナー ＆ 🤖 G-AIソムリエ（2カラム配置で完全復活！） -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      
+      <!-- 左: 第1回 G-HUB杯 -->
+      <div class="bg-gradient-to-r from-amber-500/20 via-pink-600/20 to-purple-600/20 border border-amber-500/40 p-5 rounded-3xl flex flex-col justify-between shadow-2xl">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">開催中のお祭り</span>
+            <span class="text-xs text-amber-300 font-mono">🏆 第1回 G-HUB杯</span>
+          </div>
+          <h2 class="text-xl font-black text-white">テーマ：「1分で遊べる神ゲー」コンテスト！</h2>
+          <p class="text-xs text-slate-300 mt-1">作品をプレイして投票しよう！優勝者には限定称号！</p>
         </div>
-        <h2 class="text-xl font-black text-white">テーマ：「1分で遊べる神ゲー」コンテスト開催！</h2>
-        <p class="text-xs text-slate-300 mt-1">作品をプレイして投票しよう！</p>
+        <div class="mt-4">
+          <button onclick="filterEventGames()" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs shadow-lg transition">
+            🎉 エントリー作品を見る
+          </button>
+        </div>
       </div>
-      <button onclick="filterEventGames()" class="bg-gradient-to-r from-amber-500 to-pink-500 hover:opacity-90 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs shadow-lg transition">
-        🎉 エントリー作品を見る
-      </button>
+
+      <!-- 右: 🤖 G-AI ソムリエ (復活！) -->
+      <div class="bg-gradient-to-br from-purple-900/40 via-slate-900 to-indigo-950/40 border border-purple-500/40 p-5 rounded-3xl flex flex-col justify-between shadow-2xl">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] bg-purple-500/30 text-purple-300 border border-purple-500/50 px-2 py-0.5 rounded-full font-bold">POWERED BY QWEN 2.5</span>
+            <span class="text-xs text-purple-400 font-mono">🤖 G-AI ASSISTANT</span>
+          </div>
+          <h3 class="text-lg font-black text-purple-200">ゲームソムリエに相談する</h3>
+          <p class="text-xs text-slate-400 mt-0.5">気分や好みを伝えると、G-HUB内のゲームからおすすめを探します。</p>
+        </div>
+
+        <div class="mt-3">
+          <div class="flex gap-2">
+            <input type="text" id="ai-chat-input" placeholder="例: スカッとするアクションある？ 難しいゲームやりたい！" class="flex-1 bg-slate-950 border border-purple-500/40 p-2.5 rounded-xl text-xs outline-none text-white focus:border-purple-400">
+            <button onclick="askG_AI()" id="ai-chat-btn" class="bg-purple-600 hover:bg-purple-500 text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg transition whitespace-nowrap">
+              相談する
+            </button>
+          </div>
+          <div id="ai-reply-box" class="hidden mt-2 p-3 bg-slate-950/90 border border-purple-500/30 rounded-xl">
+            <p id="ai-reply" class="text-xs text-purple-200 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto"></p>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- 検索 & フィルター -->
@@ -280,6 +310,41 @@
       }).join('');
     }
 
+    // 🤖 G-AI ソムリエ相談処理 (Qwen 2.5 Coder 連携)
+    window.askG_AI = async () => {
+      const q = document.getElementById('ai-chat-input').value;
+      if (!q) return alert('相談内容を入力してください！');
+      
+      const btn = document.getElementById('ai-chat-btn');
+      const box = document.getElementById('ai-reply-box');
+      const replyEl = document.getElementById('ai-reply');
+
+      btn.disabled = true;
+      box.classList.remove('hidden');
+      replyEl.innerText = '🤖 Qwenがゲームを分析して考えています...';
+
+      const gameSummary = allGames.map(g => `・タイトル:${g.title}, ジャンル:${g.tag}, 価格:${g.price_coins > 0 ? g.price_coins + 'G' : '無料'}, 説明:${g.description || 'なし'}`).join('\n');
+
+      try {
+        const res = await fetch('/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemPrompt: 'You are G-AI, an enthusiastic and friendly gaming concierge on G-HUB. Recommend 1-2 games from the provided list based on the user request. Speak in cheerful Japanese.',
+            userPrompt: `現在遊べるゲーム一覧:\n${gameSummary}\n\nユーザーの要望: ${q}`,
+            maxTokens: 500
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        replyEl.innerText = data.reply;
+      } catch (err) {
+        replyEl.innerText = '⚠️ エラー: ' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
     // ガチャ
     const SKINS = [
       { id: 'emerald', name: '🟢 エメラルドネオン', class: 'text-emerald-400 font-bold' },
@@ -308,17 +373,14 @@
       `;
     };
 
-    // ★ ユーザー認証＆ステータス盤の完全自動生成・表示 ★
     async function checkUser() {
       const { data: { user } } = await client.auth.getUser();
       currentUser = user;
       const statusDiv = document.getElementById('auth-status');
 
       if (user) {
-        // プロフィールを検索
         let { data: prof } = await client.from('profiles').select('*').eq('email', user.email).single();
 
-        // もし過去のアカウントでデータがなかった場合は自動で初期生成！
         if (!prof) {
           const { data: newProf } = await client.from('profiles').insert({
             email: user.email,
@@ -334,7 +396,6 @@
           prof = newProf;
         }
 
-        // ヘッダー表示
         statusDiv.innerHTML = `
           <a href="profile.html" class="text-xs text-indigo-300 font-bold hover:underline flex items-center gap-1">
             👤 ${prof?.username || user.email.split('@')[0]}
@@ -347,7 +408,6 @@
           document.getElementById('coin-section').classList.remove('hidden');
           document.getElementById('coin-count').innerText = userCoins;
 
-          // ★ 画面上の「マイステータス盤」を表示して数値を代入！ ★
           document.getElementById('my-profile-banner').classList.remove('hidden');
           document.getElementById('dashboard-name').innerText = prof.username || user.email.split('@')[0];
           document.getElementById('dashboard-email').innerText = user.email;
