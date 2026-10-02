@@ -2,115 +2,86 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>G-HUB - Zip Runner & Publisher</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, sans-serif; display: flex; height: 100vh; background: #1e1e1e; color: #fff; }
-    #sidebar { width: 380px; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 16px; gap: 10px; background: #252526; overflow-y: auto; }
-    #main { flex: 1; display: flex; flex-direction: column; background: #1e1e1e; position: relative; }
-    #drop-zone { border: 2px dashed #444; border-radius: 8px; padding: 20px 12px; text-align: center; background: #2d2d2d; cursor: pointer; }
-    #drop-zone:hover { border-color: #646cff; background: #333342; }
-    #file-input { display: none; }
-    #status { font-size: 11px; padding: 6px 10px; border-radius: 4px; background: #2e7d32; text-align: center; font-weight: bold; }
-    #terminal { height: 120px; background: #0e0e0e; color: #4af626; font-family: monospace; font-size: 11px; padding: 10px; overflow-y: auto; white-space: pre-wrap; border-radius: 6px; border: 1px solid #333; }
-    #iframe-header { height: 40px; background: #2d2d2d; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 12px; color: #ccc; }
-    
-    .btn-group { display: flex; gap: 8px; }
-    .btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: background 0.2s; color: white; }
-    #clear-data-btn { background: #dc2626; }
-    #clear-data-btn:hover { background: #ef4444; }
-    #fullscreen-btn { background: #4f46e5; }
-    #fullscreen-btn:hover { background: #6366f1; }
-    
-    #main.fullscreen {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999;
-    }
-    iframe { flex: 1; border: none; background: #fff; }
-
-    /* 公開設定フォーム */
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group label { font-size: 11px; font-weight: bold; color: #aaa; }
-    .form-input { background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 12px; outline: none; }
-    .form-input:focus { border-color: #646cff; }
-    #publish-btn { background: #16a34a; padding: 10px; font-size: 13px; margin-top: 4px; }
-    #publish-btn:hover { background: #22c55e; }
-    #publish-btn:disabled { background: #555; cursor: not-allowed; }
-  </style>
+  <title>ゲーム公開 - G-HUB</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/lib/browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
-<body>
-
-  <div id="sidebar">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3>G-HUB Zip Runner</h3>
-      <a href="index.html" style="color:#646cff; font-size:12px; text-decoration:none;">← ホームへ</a>
+<body class="bg-[#1e1e1e] text-white min-h-screen p-4 flex justify-center items-center font-sans">
+  <div class="max-w-6xl w-full bg-[#252526] p-6 rounded-2xl border border-[#333] shadow-2xl flex flex-col gap-4">
+    
+    <div class="flex justify-between items-center border-b border-[#333] pb-3">
+      <h1 class="text-xl font-bold text-white flex items-center gap-2">
+        📦 G-HUB Uploader (.zip ＆ .html 対応)
+      </h1>
+      <a href="index.html" class="text-xs text-indigo-400 hover:underline">← トップへ戻る</a>
     </div>
 
-    <div id="drop-zone">
-      <p>📁 Vite/React Zipをドロップ</p>
-      <input type="file" id="file-input" accept=".zip">
-    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- サイドバー -->
+      <div class="lg:col-span-1 flex flex-col gap-3 text-xs">
+        <!-- ドロップゾーン (.zip と .html の両方を受け付ける) -->
+        <div id="drop-zone" class="border-2 border-dashed border-[#444] hover:border-indigo-500 rounded-xl p-6 text-center bg-[#2d2d2d] cursor-pointer transition">
+          <p class="font-bold text-sm text-slate-200">📁 .zip または .html をドロップ</p>
+          <p class="text-[10px] text-slate-400 mt-1">Vite/React Zip も 通常のHTMLも自動判別します</p>
+          <input type="file" id="file-input" accept=".zip,.html" class="hidden">
+        </div>
 
-    <div id="status">Wasm モード初期化中...</div>
-    <div id="terminal">--- ログ ---<br></div>
+        <div id="status" class="p-2 rounded bg-[#2e7d32] text-center font-bold text-xs font-mono">エンジン準備中...</div>
 
-    <!-- G-HUB 公開用フォーム -->
-    <div class="form-group">
-      <label>ゲームタイトル</label>
-      <input type="text" id="game-title" class="form-input" placeholder="タイトルを入力">
-    </div>
+        <!-- メタ情報入力 -->
+        <div class="space-y-2 bg-[#1e1e1e] p-3 rounded-xl border border-[#333]">
+          <div>
+            <label class="block font-bold mb-1 text-slate-300">タイトル</label>
+            <input type="text" id="game-title" required placeholder="ゲームタイトル" class="w-full bg-[#2d2d2d] border border-[#444] p-2 rounded outline-none text-white">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold mb-1 text-slate-300">ジャンル</label>
+              <select id="game-tag" class="w-full bg-[#2d2d2d] border border-[#444] p-2 rounded outline-none text-white">
+                <option value="Action">アクション</option>
+                <option value="Puzzle">パズル</option>
+                <option value="RPG">RPG</option>
+                <option value="Horror">ホラー</option>
+                <option value="Other">その他</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold mb-1 text-slate-300">価格</label>
+              <select id="game-price" class="w-full bg-[#2d2d2d] border border-[#444] p-2 rounded outline-none text-white">
+                <option value="0">無料 (Free)</option>
+                <option value="30">30 G</option>
+                <option value="50">50 G</option>
+                <option value="100">100 G</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold mb-1 text-slate-300">説明文</label>
+            <textarea id="game-desc" rows="2" placeholder="ゲームの説明や操作方法" class="w-full bg-[#2d2d2d] border border-[#444] p-2 rounded outline-none text-white"></textarea>
+          </div>
+        </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-      <div class="form-group">
-        <label>ジャンル</label>
-        <select id="game-tag" class="form-input">
-          <option value="Action">アクション</option>
-          <option value="Puzzle">パズル</option>
-          <option value="RPG">RPG</option>
-          <option value="Horror">ホラー</option>
-          <option value="Other">その他</option>
-        </select>
+        <!-- ログ画面 -->
+        <div id="terminal" class="bg-[#0e0e0e] text-[#4af626] font-mono text-[10px] p-2.5 rounded h-28 overflow-y-auto border border-[#333] whitespace-pre-wrap">--- ログ ---<br></div>
+
+        <button type="button" onclick="publishToGHub()" id="publish-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-3 rounded-xl shadow-lg transition text-xs">
+          🚀 このゲームをG-HUBに公開する
+        </button>
       </div>
-      <div class="form-group">
-        <label>価格 (G-coin)</label>
-        <select id="game-price" class="form-input">
-          <option value="0">無料 (Free)</option>
-          <option value="30">30 G</option>
-          <option value="50">50 G</option>
-          <option value="100">100 G</option>
-        </select>
+
+      <!-- プレビューメインエリア -->
+      <div class="lg:col-span-2 flex flex-col h-[560px] bg-[#1e1e1e] rounded-xl border border-[#333] overflow-hidden">
+        <div class="h-10 bg-[#2d2d2d] border-b border-[#333] flex justify-between items-center px-4 text-xs text-[#ccc]">
+          <span class="font-bold">Preview</span>
+          <button id="clear-data-btn" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded text-xs">🗑️ セーブ消去</button>
+        </div>
+        <iframe id="preview-iframe" class="flex-1 w-full h-full border-none bg-white" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-pointer-lock"></iframe>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label>対応機種</label>
-      <div style="display:flex; gap:12px; font-size:11px;">
-        <label><input type="checkbox" id="plat-pc" checked> 💻 PC</label>
-        <label><input type="checkbox" id="plat-mobile"> 📱 スマホ</label>
-        <label><input type="checkbox" id="plat-pad"> 🎮 パッド</label>
-      </div>
     </div>
-
-    <div class="form-group">
-      <label>説明文・操作方法</label>
-      <textarea id="game-desc" class="form-input" rows="2" placeholder="操作方法を入力"></textarea>
-    </div>
-
-    <button id="publish-btn" class="btn" onclick="publishToGHub()">🚀 G-HUBに公開する！</button>
-  </div>
-
-  <div id="main">
-    <div id="iframe-header">
-      <span>Preview</span>
-      <div class="btn-group">
-        <button id="clear-data-btn" class="btn">🗑️ セーブデータ消去</button>
-        <button id="fullscreen-btn" class="btn">全画面表示</button>
-      </div>
-    </div>
-    <iframe id="preview-iframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-pointer-lock"></iframe>
   </div>
 
   <script>
@@ -122,81 +93,35 @@
     const terminal = document.getElementById('terminal');
     const iframe = document.getElementById('preview-iframe');
     const statusEl = document.getElementById('status');
-    const mainArea = document.getElementById('main');
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
     const clearDataBtn = document.getElementById('clear-data-btn');
 
     let esbuildReady = false;
-    let compiledHtmlForPublish = null; // 公開用の完成HTML
+    let finalPayload = null; // アップロードするBlob (HTML または Zip)
+    let payloadType = 'html'; // 'html' または 'zip'
 
     function log(msg) {
       terminal.innerText += msg + '\n';
       terminal.scrollTop = terminal.scrollHeight;
     }
 
-    // 全画面切り替え機能
-    fullscreenBtn.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        if (mainArea.requestFullscreen) {
-          mainArea.requestFullscreen();
-        } else {
-          mainArea.classList.add('fullscreen');
-        }
-        fullscreenBtn.textContent = '全画面解除';
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
-        fullscreenBtn.textContent = '全画面表示';
-      }
-    });
-
-    document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement) {
-        mainArea.classList.remove('fullscreen');
-        fullscreenBtn.textContent = '全画面表示';
-      }
-    });
-
-    // セーブデータ（iframe内のストレージ）の削除処理
     clearDataBtn.addEventListener('click', () => {
-      if (!iframe.srcdoc) {
-        alert("ゲームが読み込まれていません。");
-        return;
-      }
-
-      if (confirm("現在プレビュー中のゲームのセーブデータ（localStorage）を削除して再読み込みしますか？")) {
-        try {
-          const iframeWin = iframe.contentWindow;
-          if (iframeWin) {
-            iframeWin.localStorage.clear();
-            iframeWin.sessionStorage.clear();
-            
-            const currentDoc = iframe.srcdoc;
-            iframe.srcdoc = '';
-            setTimeout(() => {
-              iframe.srcdoc = currentDoc;
-              log("🗑️ セーブデータを削除し、プレビューをリセットしました。");
-            }, 50);
-          }
-        } catch (e) {
-          log("❌ セーブデータの削除に失敗しました: " + e.message);
-        }
-      }
+      if (!iframe.srcdoc) return alert("ゲームが読み込まれていません");
+      iframe.contentWindow.localStorage.clear();
+      iframe.contentWindow.sessionStorage.clear();
+      const doc = iframe.srcdoc;
+      iframe.srcdoc = '';
+      setTimeout(() => iframe.srcdoc = doc, 50);
+      log("🗑️ セーブデータを消去しました。");
     });
 
     // esbuild-wasm 初期化
     async function initEsbuild() {
       try {
-        await esbuild.initialize({
-          wasmURL: 'https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/esbuild.wasm'
-        });
+        await esbuild.initialize({ wasmURL: 'https://cdn.jsdelivr.net/npm/esbuild-wasm@0.19.11/esbuild.wasm' });
         esbuildReady = true;
-        statusEl.innerText = "⚡ esbuild 準備完了";
-        log("✅ esbuild-wasm の初期化が完了しました。");
-      } catch (e) {
-        log("❌ esbuild 初期化失敗: " + e.message);
-      }
+        statusEl.innerText = "⚡ エンジン準備完了";
+        log("✅ esbuild-wasm エンジンの準備が完了しました。");
+      } catch (e) { log("❌ 初期化失敗: " + e.message); }
     }
     initEsbuild();
 
@@ -204,26 +129,48 @@
     dropZone.addEventListener('dragover', (e) => e.preventDefault());
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      if (e.dataTransfer.files.length > 0) processZip(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
     });
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) processZip(e.target.files[0]);
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
     });
 
-    // ★ ご提示いただいたエンジンそのもの
-    async function processZip(file) {
-      if (!esbuildReady) {
-        alert("esbuild-wasm の準備ができていません。少々お待ちください。");
+    // ★ .html と .zip の振り分け処理 ★
+    async function handleFile(file) {
+      if (!file) return;
+
+      // 1. 普通の .html ファイルの場合
+      if (file.name.toLowerCase().endsWith('.html')) {
+        log(`\n📄 単一HTMLファイルを検出: ${file.name}`);
+        document.getElementById('game-title').value = file.name.replace('.html', '');
+        
+        const htmlText = await file.text();
+        iframe.srcdoc = htmlText;
+        finalPayload = new Blob([htmlText], { type: 'text/html' });
+        payloadType = 'html';
+        log('🚀 プレビュー描画完了！右側でゲームが動きます！');
         return;
       }
 
+      // 2. .zip ファイルの場合（あのエンジンを起動）
+      if (file.name.toLowerCase().endsWith('.zip')) {
+        await processZip(file);
+      } else {
+        alert('.zip または .html ファイルを選択してください！');
+      }
+    }
+
+    // ★ あのエンジンの Zip 処理 ★
+    async function processZip(file) {
+      if (!esbuildReady) return alert("esbuild の準備中です。少々お待ちください。");
       document.getElementById('game-title').value = file.name.replace('.zip', '');
       log(`\n📦 Zipファイルを解析中: ${file.name}`);
+
       try {
         const zip = await JSZip.loadAsync(file);
         const files = {};
-
         const paths = Object.keys(zip.files);
+
         let prefix = '';
         const rootFolders = new Set(paths.map(p => p.split('/')[0]).filter(Boolean));
         if (rootFolders.size === 1 && paths.some(p => p.endsWith('index.html'))) {
@@ -237,31 +184,26 @@
         }
 
         let html = files['index.html'] || files['public/index.html'];
-        if (!html) {
-          log('❌ index.html が見つかりませんでした。');
-          return;
-        }
+        if (!html) return log('❌ Zip内に index.html が見つかりませんでした。');
 
         const entryCandidates = ['src/main.tsx', 'src/main.jsx', 'src/index.tsx', 'src/index.jsx', 'src/App.tsx', 'src/App.jsx'];
         const entryPath = entryCandidates.find(e => files[e] !== undefined);
 
         if (!entryPath) {
-          // 通常の静的HTMLの場合
-          log('ℹ️ 通常のHTMLファイルを検出しました。プレビューを表示します。');
+          // エントリポイントがない静的HTMLゲーム
           iframe.srcdoc = html;
-          compiledHtmlForPublish = html;
-          log('🚀 プレビュー描画完了！');
-          return;
+          finalPayload = file; // そのままZipとして保存
+          payloadType = 'zip';
+          return log('🚀 プレビュー描画完了！');
         }
 
-        log(`⚡ esbuild でバンドル処理を開始 (${entryPath})...`);
+        log(`⚡ esbuild でバンドル中 (${entryPath})...`);
 
         const zipPlugin = {
           name: 'zip-vfs',
           setup(build) {
             build.onResolve({ filter: /.*/ }, args => {
               let target = args.path.startsWith('/') ? args.path.slice(1) : args.path;
-
               const isRelative = args.path.startsWith('.');
               const isAbsoluteLocal = files[target] !== undefined;
 
@@ -273,47 +215,27 @@
                   const stack = [];
                   for (const p of parts) {
                     if (p === '.' || p === '') continue;
-                    if (p === '..') stack.pop();
-                    else stack.push(p);
+                    if (p === '..') stack.pop(); else stack.push(p);
                   }
                   target = stack.join('/');
                 }
-
                 const exts = ['', '.tsx', '.ts', '.jsx', '.js', '.css', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
                 for (const ext of exts) {
-                  if (files[target + ext] !== undefined) {
-                    return { path: target + ext, namespace: 'zip-vfs' };
-                  }
+                  if (files[target + ext] !== undefined) return { path: target + ext, namespace: 'zip-vfs' };
                 }
                 return { path: target, namespace: 'zip-vfs' };
               }
-
-              let pkg = args.path;
-              return { path: `https://esm.sh/${pkg}`, external: true };
+              return { path: `https://esm.sh/${args.path}`, external: true };
             });
 
             build.onLoad({ filter: /.*/, namespace: 'zip-vfs' }, args => {
               const content = files[args.path];
-              if (content === undefined) {
-                return { errors: [{ text: `File not found in zip: ${args.path}` }] };
-              }
-
+              if (content === undefined) return { errors: [{ text: `File not found: ${args.path}` }] };
               if (args.path.endsWith('.css')) {
-                const escapedCss = JSON.stringify(content);
-                const js = `
-                  const style = document.createElement('style');
-                  style.textContent = ${escapedCss};
-                  document.head.appendChild(style);
-                `;
-                return { contents: js, loader: 'js' };
+                return { contents: `const s=document.createElement('style');s.textContent=${JSON.stringify(content)};document.head.appendChild(s);`, loader: 'js' };
               }
-
-              let loader = 'js';
-              if (args.path.endsWith('.tsx')) loader = 'tsx';
-              else if (args.path.endsWith('.ts')) loader = 'ts';
-              else if (args.path.endsWith('.jsx')) loader = 'jsx';
-
-              return { contents: content, loader: loader };
+              let loader = args.path.endsWith('.tsx') ? 'tsx' : args.path.endsWith('.ts') ? 'ts' : args.path.endsWith('.jsx') ? 'jsx' : 'js';
+              return { contents: content, loader };
             });
           }
         };
@@ -328,49 +250,29 @@
           jsxImportSource: 'react'
         });
 
-        const bundledJs = result.outputFiles[0].text;
-
-        log('🔗 html に JS を注入中...');
-
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const head = doc.head;
-
-        const tailwindScript = doc.createElement('script');
-        tailwindScript.src = "https://cdn.tailwindcss.com";
-        head.appendChild(tailwindScript);
+        const tw = doc.createElement('script');
+        tw.src = "https://cdn.tailwindcss.com";
+        doc.head.appendChild(tw);
 
         const scriptEl = doc.createElement('script');
         scriptEl.type = 'module';
-        scriptEl.textContent = bundledJs;
-
+        scriptEl.textContent = result.outputFiles[0].text;
         doc.querySelectorAll('script[type="module"]').forEach(s => s.remove());
         doc.body.appendChild(scriptEl);
 
-        const errScript = doc.createElement('script');
-        errScript.textContent = `
-          window.onerror = function(msg, url, line) {
-            window.parent.postMessage({ type: 'error', msg: msg + ' (Line: ' + line + ')' }, '*');
-          };
-        `;
-        head.appendChild(errScript);
-
-        compiledHtmlForPublish = doc.documentElement.outerHTML;
-        iframe.srcdoc = compiledHtmlForPublish;
-        log('🚀 プレビュー描画完了！');
-
+        const finalHtml = doc.documentElement.outerHTML;
+        iframe.srcdoc = finalHtml;
+        finalPayload = new Blob([finalHtml], { type: 'text/html' });
+        payloadType = 'html';
+        log('🚀 TSXバンドル完了！プレビューで遊べます！');
       } catch (err) {
-        log(`❌ バンドルエラー: ${err.message}`);
+        log(`❌ エラー: ${err.message}`);
       }
     }
 
-    window.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'error') {
-        log(`❌ プレビュー内エラー: ${e.data.msg}`);
-      }
-    });
-
-    // ★ G-HUB への本番公開処理（プレビューで動いたHTMLをそのまま保存）
+    // ★ G-HUB 本番公開 ★
     async function publishToGHub() {
       const title = document.getElementById('game-title').value;
       const tag = document.getElementById('game-tag').value;
@@ -379,29 +281,24 @@
       const btn = document.getElementById('publish-btn');
 
       if (!title) return alert('タイトルを入力してください！');
-      if (!compiledHtmlForPublish) return alert('ゲームがバンドルされていません。先にZipをドロップしてください！');
+      if (!finalPayload) return alert('ファイルをドロップしてプレビューを動かしてから公開してください！');
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return alert('公開するにはログインが必要です！トップページでログインしてください。');
 
       btn.disabled = true;
-      log('\n🚀 G-HUBにゲームを公開中...');
+      log('\n🚀 G-HUBにアップロード中...');
 
       try {
         const gameId = crypto.randomUUID();
-        const blob = new Blob([compiledHtmlForPublish], { type: 'text/html' });
+        const filename = payloadType === 'html' ? 'index.html' : 'game.zip';
 
-        await supabase.storage.from('games').upload(`${gameId}/index.html`, blob, {
-          contentType: 'text/html',
+        await supabase.storage.from('games').upload(`${gameId}/${filename}`, finalPayload, {
+          contentType: payloadType === 'html' ? 'text/html' : 'application/zip',
           upsert: true
         });
 
-        const entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/index.html`).data.publicUrl;
-
-        const plats = [];
-        if (document.getElementById('plat-pc').checked) plats.push('pc');
-        if (document.getElementById('plat-mobile').checked) plats.push('mobile');
-        if (document.getElementById('plat-pad').checked) plats.push('pad');
+        const entryUrl = supabase.storage.from('games').getPublicUrl(`${gameId}/${filename}`).data.publicUrl;
 
         await supabase.from('games').insert({
           id: gameId,
@@ -410,7 +307,7 @@
           description: desc,
           entry_url: entryUrl,
           author_email: user.email,
-          platforms: plats.join(','),
+          platforms: 'pc',
           price_coins: price,
           likes_count: 0,
           play_count: 0
