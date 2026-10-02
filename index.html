@@ -11,13 +11,13 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
 </head>
-<body class="bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 min-h-screen font-sans transition-colors duration-200">
+<body class="bg-slate-100/70 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 min-h-screen font-sans transition-colors duration-200">
 
   <div class="max-w-7xl mx-auto px-4 py-6">
     <!-- ナビゲーションバー -->
-    <header class="flex flex-wrap justify-between items-center gap-4 mb-6 bg-white dark:bg-[#111827] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-2xl">
+    <header class="flex flex-wrap justify-between items-center gap-4 mb-6 bg-white dark:bg-[#111827] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm dark:shadow-2xl">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg font-black shadow">G</div>
+        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg font-black shadow-md shadow-indigo-500/20">G</div>
         <div>
           <h1 class="text-xl font-black tracking-wider text-slate-900 dark:text-white">G-HUB</h1>
           <p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Indie Gaming Platform</p>
@@ -27,46 +27,47 @@
       <div class="flex items-center gap-3 text-xs font-semibold">
         <!-- 所持コイン & ガチャ -->
         <div id="coin-section" class="hidden flex items-center gap-2">
-          <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-xl font-bold">
+          <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-xl font-bold">
             <span id="coin-count">0</span> G
           </div>
-          <button onclick="openGachaModal()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-xl transition">
+          <button onclick="openGachaModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl transition">
             Gacha
           </button>
         </div>
 
         <!-- テーマ切り替えトグル（Dark / Light） -->
-        <button onclick="toggleTheme()" id="theme-btn" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="テーマ切り替え">
+        <button onclick="toggleTheme()" id="theme-btn" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="テーマ切り替え">
           <span id="theme-icon">🌙</span>
         </button>
 
-        <button onclick="openFriendModal()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl transition">
+        <button onclick="openFriendModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-xl transition">
           Friends
         </button>
 
+        <!-- ログイン / ユーザー情報 -->
         <div id="auth-status">
-          <button onclick="openAuthModal()" class="bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-4 py-2 rounded-xl transition">
+          <button onclick="openAuthModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl transition shadow-sm">
             ログイン
           </button>
         </div>
 
-        <a href="upload.html" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl shadow transition">
+        <a href="upload.html" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition">
           公開する
         </a>
       </div>
     </header>
 
     <!-- マイステータス盤 -->
-    <div id="my-profile-banner" class="hidden bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 rounded-2xl mb-6 shadow-sm dark:shadow-xl">
+    <div id="my-profile-banner" class="hidden bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl mb-6 shadow-sm dark:shadow-xl">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center font-bold text-lg">
+          <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center font-bold text-lg">
             ID
           </div>
           <div>
             <div class="flex items-center gap-2">
               <span id="dashboard-name" class="font-black text-slate-900 dark:text-white text-base">Guest</span>
-              <span id="dashboard-streak" class="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/40 text-[11px] px-2 py-0.5 rounded font-mono font-bold">1 Day Streak</span>
+              <span id="dashboard-streak" class="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/40 text-[11px] px-2 py-0.5 rounded font-mono font-bold">1 Day Streak</span>
             </div>
             <p id="dashboard-email" class="text-xs text-slate-400 font-mono mt-0.5"></p>
           </div>
@@ -88,7 +89,7 @@
             <span id="dashboard-dlvl" class="text-sm font-black text-purple-600 dark:text-purple-400 font-mono">Lv.1</span>
           </div>
 
-          <a href="profile.html" class="bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold px-4 py-2.5 rounded-xl transition">
+          <a href="profile.html" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl transition shadow-sm">
             マイページ →
           </a>
         </div>
@@ -99,24 +100,24 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       
       <!-- G-HUB杯 -->
-      <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-lg">
+      <div class="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-lg">
         <div>
-          <span class="bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Event</span>
+          <span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Event</span>
           <h2 class="text-lg font-black text-slate-900 dark:text-white mt-2">第1回 G-HUB杯 「1分で遊べるゲーム」コンテスト</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">コンテストエントリー作品をプレイして投票しよう！</p>
         </div>
         <div class="mt-4">
-          <button onclick="filterEventGames()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition">
+          <button onclick="filterEventGames()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition">
             エントリー作品を一覧表示
           </button>
         </div>
       </div>
 
       <!-- G-AI アシスタント -->
-      <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-lg">
+      <div class="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-lg">
         <div>
           <div class="flex items-center justify-between">
-            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold uppercase">AI Assistant</span>
+            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded font-mono font-bold uppercase">AI Assistant</span>
             <span class="text-[11px] text-slate-400 font-mono">Qwen 2.5 Coder</span>
           </div>
           <h3 class="text-lg font-black text-slate-900 dark:text-white mt-2">ゲームソムリエに相談</h3>
@@ -126,7 +127,7 @@
         <div class="mt-3">
           <div class="flex gap-2">
             <input type="text" id="ai-chat-input" placeholder="例: 集中して遊べるパズルゲームはある？" class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs outline-none text-slate-800 dark:text-white focus:border-indigo-500">
-            <button onclick="askG_AI()" id="ai-chat-btn" class="bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition whitespace-nowrap">
+            <button onclick="askG_AI()" id="ai-chat-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm whitespace-nowrap">
               質問する
             </button>
           </div>
@@ -141,7 +142,7 @@
     <!-- 検索 & フィルター -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
       <div class="flex gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0" id="tag-filters">
-        <button onclick="setTag('All')" class="tag-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 transition">すべて</button>
+        <button onclick="setTag('All')" class="tag-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-sm transition">すべて</button>
         <button onclick="setTag('Action')" class="tag-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">アクション</button>
         <button onclick="setTag('Puzzle')" class="tag-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">パズル</button>
         <button onclick="setTag('RPG')" class="tag-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">RPG</button>
@@ -163,8 +164,8 @@
   </div>
 
   <!-- ガチャモーダル -->
-  <div id="gacha-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-w-sm w-full shadow-2xl text-center">
+  <div id="gacha-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-w-sm w-full shadow-xl text-center">
       <h2 class="text-lg font-black text-slate-900 dark:text-white mb-1">ネオンスキンガチャ</h2>
       <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">1回 100 G（チャット名の装飾スタイル）</p>
 
@@ -172,41 +173,41 @@
         <span class="text-slate-400 text-xs">ボタンを押してスキンを獲得</span>
       </div>
 
-      <button onclick="playGacha()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition mb-2">
+      <button onclick="playGacha()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition mb-2 shadow-sm">
         100 G で獲得する
       </button>
-      <button onclick="closeGachaModal()" class="text-slate-400 text-xs py-1">閉じる</button>
+      <button onclick="closeGachaModal()" class="text-slate-400 hover:text-slate-600 text-xs py-1">閉じる</button>
     </div>
   </div>
 
   <!-- フレンドモーダル -->
-  <div id="friend-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-w-md w-full shadow-2xl">
+  <div id="friend-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-w-md w-full shadow-xl">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-base font-bold text-slate-900 dark:text-white">フレンド一覧</h2>
         <button onclick="closeFriendModal()" class="text-slate-400 hover:text-slate-600 text-xs">閉じる</button>
       </div>
       <form id="friend-form" class="flex gap-2 mb-4">
-        <input type="email" id="friend-email" placeholder="メールアドレスを入力" required class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl text-xs outline-none">
-        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs">追加</button>
+        <input type="email" id="friend-email" placeholder="メールアドレスを入力" required class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl text-xs outline-none focus:border-indigo-500">
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm">追加</button>
       </form>
       <div id="friends-list" class="space-y-1.5 max-h-60 overflow-y-auto"></div>
     </div>
   </div>
 
   <!-- ログインモーダル -->
-  <div id="auth-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-w-sm w-full shadow-2xl">
+  <div id="auth-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-w-sm w-full shadow-xl">
       <h2 id="auth-title" class="text-base font-bold text-slate-900 dark:text-white mb-4">ログイン</h2>
       <div class="space-y-3">
-        <input type="email" id="auth-email" placeholder="メールアドレス" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs outline-none">
-        <input type="password" id="auth-password" placeholder="パスワード" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs outline-none">
-        <button id="auth-submit-btn" onclick="handleAuth()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-bold text-xs transition">ログイン</button>
+        <input type="email" id="auth-email" placeholder="メールアドレス" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500">
+        <input type="password" id="auth-password" placeholder="パスワード" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500">
+        <button id="auth-submit-btn" onclick="handleAuth()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-bold text-xs transition shadow-sm">ログイン</button>
       </div>
       <div class="mt-4 text-center text-xs text-slate-400">
-        <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="hover:underline">新規アカウント登録</button>
+        <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="hover:text-indigo-600 underline">新規アカウント登録</button>
       </div>
-      <button onclick="closeAuthModal()" class="mt-3 w-full text-slate-400 text-xs py-1">閉じる</button>
+      <button onclick="closeAuthModal()" class="mt-3 w-full text-slate-400 hover:text-slate-600 text-xs py-1">閉じる</button>
     </div>
   </div>
 
@@ -260,7 +261,7 @@
       document.querySelectorAll('.tag-btn').forEach(b => {
         b.className = 'tag-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition';
       });
-      event.target.className = 'tag-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 transition';
+      event.target.className = 'tag-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-sm transition';
       renderGames();
     };
 
@@ -304,8 +305,8 @@
         const plats = (g.platforms || 'pc').split(',').map(p => p === 'mobile' ? 'Mobile' : p === 'pad' ? 'Gamepad' : 'PC').join(' · ');
 
         return `
-          <a href="play.html?id=${g.id}" class="group bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500 hover:-translate-y-1 transition duration-200 block shadow-sm dark:shadow-lg relative">
-            ${g.is_event ? '<span class="absolute top-2 right-2 z-10 bg-indigo-600 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow">EVENT</span>' : ''}
+          <a href="play.html?id=${g.id}" class="group bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500 hover:-translate-y-1 transition duration-200 block shadow-sm dark:shadow-lg relative">
+            ${g.is_event ? '<span class="absolute top-2 right-2 z-10 bg-indigo-600 text-white font-bold text-[9px] px-2 py-0.5 rounded shadow-sm">EVENT</span>' : ''}
             
             <div class="aspect-video relative overflow-hidden bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
               ${g.thumbnail_url 
@@ -313,23 +314,24 @@
                 : `<div class="text-slate-300 dark:text-slate-700 font-mono text-xs uppercase tracking-widest font-bold">No Image</div>`
               }
               
+              <!-- バッジ類（黒を廃止し、調和したトーンへ） -->
               <div class="absolute top-2 left-2 flex gap-1 z-10">
-                <span class="${(g.price_coins || 0) > 0 ? 'bg-amber-500 text-slate-950' : 'bg-slate-900/80 text-white'} text-[9px] font-bold px-2 py-0.5 rounded shadow">
+                <span class="${(g.price_coins || 0) > 0 ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'} text-[9px] font-bold px-2 py-0.5 rounded shadow-sm">
                   ${(g.price_coins || 0) > 0 ? `${g.price_coins} G` : 'FREE'}
                 </span>
-                <span class="bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span class="bg-slate-900/60 dark:bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm">
                   ${plats}
                 </span>
               </div>
 
-              <span class="absolute bottom-2 left-2 bg-black/60 text-slate-300 text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm font-mono">
+              <span class="absolute bottom-2 left-2 bg-slate-900/60 dark:bg-black/60 text-slate-200 text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm font-mono">
                 ${g.tag || 'Game'}
               </span>
             </div>
 
             <div class="p-4">
-              <h2 class="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-indigo-500 transition truncate">${g.title}</h2>
-              <p class="text-slate-500 text-xs mt-1 line-clamp-2 leading-relaxed">${g.description || '説明はありません。'}</p>
+              <h2 class="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">${g.title}</h2>
+              <p class="text-slate-500 dark:text-slate-400 text-xs mt-1 line-clamp-2 leading-relaxed">${g.description || '説明はありません。'}</p>
               <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-[11px] text-slate-400 font-mono">
                 <span>Likes: ${g.likes_count || 0}</span>
                 <span>Plays: ${g.play_count || 0}</span>
@@ -431,7 +433,7 @@
           <a href="profile.html" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
             ${prof?.username || user.email.split('@')[0]}
           </a>
-          <button onclick="logout()" class="text-xs text-slate-400 hover:text-slate-600 ml-2">ログアウト</button>
+          <button onclick="logout()" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-2">ログアウト</button>
         `;
 
         if (prof) {
@@ -492,7 +494,7 @@
       list.innerHTML = friends.map(f => `
         <div class="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
           <span>${f.friend_email}</span>
-          <span class="text-indigo-500 font-bold">Online</span>
+          <span class="text-indigo-600 dark:text-indigo-400 font-bold">Online</span>
         </div>
       `).join('');
     }
