@@ -44,6 +44,7 @@
           👥 フレンド
         </button>
 
+        <!-- ユーザー情報 ＆ プロフィールリンク -->
         <div id="auth-status">
           <button onclick="openAuthModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition">
             ログイン
@@ -353,19 +354,23 @@
       }
     };
 
-    // ユーザー認証 ＆ データ取得
+    // ユーザー認証 ＆ データ取得（プロフィールリンク対応）
     async function checkUser() {
       const { data: { user } } = await client.auth.getUser();
       currentUser = user;
       const statusDiv = document.getElementById('auth-status');
 
       if (user) {
+        const { data: prof } = await client.from('profiles').select('*').eq('email', user.email).single();
+
+        // ★ ユーザー名をクリックで profile.html へ飛ぶように設定 ★
         statusDiv.innerHTML = `
-          <span class="text-xs text-indigo-300 font-bold">👤 ${user.email.split('@')[0]}</span>
+          <a href="profile.html" class="text-xs text-indigo-300 font-bold hover:underline cursor-pointer flex items-center gap-1">
+            👤 ${prof?.username || user.email.split('@')[0]}
+          </a>
           <button onclick="logout()" class="text-xs text-slate-500 hover:text-rose-400 ml-2">ログアウト</button>
         `;
 
-        const { data: prof } = await client.from('profiles').select('*').eq('email', user.email).single();
         if (prof) {
           userCoins = prof.coins || 100;
           document.getElementById('coin-section').classList.remove('hidden');
